@@ -176,7 +176,11 @@ export type DetectedLocation = {
   attribution: string;
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:5000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (typeof window !== "undefined" && window.location.hostname.includes("vercel.app")
+    ? "https://air-travel-stylist-api.vercel.app"
+    : "http://127.0.0.1:5000");
 
 async function responseError(response: Response, label: string): Promise<Error> {
   const payload = await response.json().catch(() => null) as { error?: string } | null;
