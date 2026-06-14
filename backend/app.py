@@ -34,6 +34,16 @@ def create_app() -> Flask:
 
     init_schema()
 
+    @app.get("/")
+    def index() -> Any:
+        return jsonify(
+            {
+                "service": "ai-travel-stylist",
+                "status": "ok",
+                "message": "Backend is live. Use /api/health for health checks.",
+            }
+        )
+
     @app.get("/api/health")
     def health() -> Any:
         return jsonify({"status": "ok", "service": "ai-travel-stylist"})
