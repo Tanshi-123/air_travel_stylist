@@ -1,0 +1,111 @@
+
+> ai-travel-stylist-frontend@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.29.160:3000
+✓ Ready in 1063ms
+
+ GET /plan 200 in 821ms (next.js: 380ms, application-code: 441ms)
+ GET /plan 200 in 132ms (next.js: 12ms, application-code: 121ms)
+ GET / 200 in 90ms (next.js: 39ms, application-code: 51ms)
+ GET /plan 200 in 52ms (next.js: 3ms, application-code: 48ms)
+✓ Compiled in 300ms
+ GET /plan 200 in 222ms (next.js: 93ms, application-code: 130ms)
+✓ Compiled in 520ms
+ GET /plan 200 in 351ms (next.js: 249ms, application-code: 102ms)
+✓ Compiled in 229ms
+ GET /plan 200 in 129ms (next.js: 67ms, application-code: 62ms)
+✓ Compiled in 231ms
+ GET /plan 200 in 132ms (next.js: 93ms, application-code: 39ms)
+ GET /plan 200 in 387ms (next.js: 7ms, application-code: 380ms)
+ GET /plan 200 in 101ms (next.js: 8ms, application-code: 93ms)
+ GET /plan 200 in 738ms (next.js: 355ms, application-code: 383ms)
+ GET /plan 200 in 338ms (next.js: 9ms, application-code: 329ms)
+✓ Compiled in 383ms
+ GET /plan 200 in 351ms (next.js: 248ms, application-code: 103ms)
+ GET /plan 200 in 75ms (next.js: 17ms, application-code: 58ms)
+✓ Compiled in 331ms
+ GET /plan 200 in 226ms (next.js: 128ms, application-code: 98ms)
+ GET /plan 200 in 52ms (next.js: 5ms, application-code: 47ms)
+✓ Compiled in 798ms
+ GET /plan 200 in 151ms (next.js: 76ms, application-code: 74ms)
+ GET /plan 200 in 40ms (next.js: 6ms, application-code: 34ms)
+✓ Compiled in 950ms
+ GET /plan 200 in 158ms (next.js: 73ms, application-code: 86ms)
+ GET /plan 200 in 39ms (next.js: 3ms, application-code: 35ms)
+ GET /plan 200 in 216ms (next.js: 4ms, application-code: 213ms)
+ GET /plan 200 in 221ms (next.js: 5ms, application-code: 215ms)
+ GET /plan 200 in 221ms (next.js: 41ms, application-code: 180ms)
+ GET /plan 200 in 145ms (next.js: 8ms, application-code: 137ms)
+ GET /plan 200 in 143ms (next.js: 39ms, application-code: 104ms)
+ GET /plan 200 in 66ms (next.js: 15ms, application-code: 51ms)
+✓ Compiled in 633ms
+ GET /plan 200 in 527ms (next.js: 66ms, application-code: 461ms)
+ GET /plan 200 in 533ms (next.js: 101ms, application-code: 432ms)
+ GET /plan 200 in 412ms (next.js: 12ms, application-code: 400ms)
+ GET /plan 200 in 408ms (next.js: 45ms, application-code: 363ms)
+ GET /plan 200 in 317ms (next.js: 8ms, application-code: 310ms)
+ GET /plan 200 in 318ms (next.js: 40ms, application-code: 278ms)
+ GET /plan 200 in 316ms (next.js: 68ms, application-code: 248ms)
+ GET /plan 200 in 317ms (next.js: 99ms, application-code: 218ms)
+ GET /plan 200 in 590ms (next.js: 102ms, application-code: 488ms)
+ GET /plan 200 in 716ms (next.js: 324ms, application-code: 392ms)
+ GET /plan 200 in 217ms (next.js: 27ms, application-code: 191ms)
+ GET /plan 200 in 1030ms (next.js: 188ms, application-code: 842ms)
+ GET /plan 200 in 930ms (next.js: 43ms, application-code: 886ms)
+ GET /plan 200 in 832ms (next.js: 187ms, application-code: 645ms)
+ GET /plan 200 in 725ms (next.js: 119ms, application-code: 605ms)
+✓ Compiled in 316ms
+ GET /plan 200 in 560ms (next.js: 384ms, application-code: 176ms)
+ GET /plan 200 in 57ms (next.js: 5ms, application-code: 52ms)
+ GET /plan 200 in 4.1s (next.js: 65ms, application-code: 4.0s)
+✓ Compiled in 8.8s
+ GET /plan 200 in 1315ms (next.js: 765ms, application-code: 550ms)
+ GET /plan 200 in 331ms (next.js: 32ms, application-code: 299ms)
+✓ Compiled in 949ms
+ GET /plan 200 in 1301ms (next.js: 927ms, application-code: 374ms)
+ GET /plan 200 in 134ms (next.js: 16ms, application-code: 118ms)
+✓ Compiled in 850ms
+ GET /plan 200 in 714ms (next.js: 423ms, application-code: 291ms)
+✓ Compiled in 769ms
+ GET /plan 200 in 774ms (next.js: 442ms, application-code: 332ms)
+ GET /plan 200 in 955ms (next.js: 105ms, application-code: 849ms)
+ GET /plan 200 in 792ms (next.js: 23ms, application-code: 769ms)
+✓ Compiled in 1656ms
+ GET /plan 200 in 1214ms (next.js: 874ms, application-code: 340ms)
+ GET /plan 200 in 155ms (next.js: 26ms, application-code: 129ms)
+✓ Compiled in 640ms
+ GET /plan 200 in 518ms (next.js: 369ms, application-code: 149ms)
+ GET /plan 200 in 50ms (next.js: 5ms, application-code: 45ms)
+✓ Compiled in 441ms
+ GET /plan 200 in 421ms (next.js: 309ms, application-code: 112ms)
+ GET /plan 200 in 71ms (next.js: 15ms, application-code: 55ms)
+ GET /plan 200 in 1330ms (next.js: 34ms, application-code: 1296ms)
+✓ Compiled in 653ms
+ GET /plan 200 in 748ms (next.js: 477ms, application-code: 270ms)
+ GET /plan 200 in 122ms (next.js: 11ms, application-code: 112ms)
+✓ Compiled in 333ms
+ GET /plan 200 in 551ms (next.js: 329ms, application-code: 223ms)
+ GET /plan 200 in 97ms (next.js: 14ms, application-code: 84ms)
+✓ Compiled in 696ms
+ GET /plan 200 in 448ms (next.js: 230ms, application-code: 217ms)
+ GET /plan 200 in 81ms (next.js: 13ms, application-code: 69ms)
+✓ Compiled in 1274ms
+ GET /plan 500 in 1868ms (next.js: 348ms, application-code: 1520ms)
+ GET /plan 500 in 695ms (next.js: 19ms, application-code: 676ms)
+✓ Compiled in 372ms
+ GET /plan 500 in 1479ms (next.js: 316ms, application-code: 1163ms)
+ GET /plan 500 in 719ms (next.js: 8ms, application-code: 710ms)
+✓ Compiled in 315ms
+ GET /plan 200 in 1333ms (next.js: 305ms, application-code: 1028ms)
+ GET /plan 200 in 532ms (next.js: 89ms, application-code: 443ms)
+✓ Compiled in 377ms
+ GET /plan 200 in 519ms (next.js: 274ms, application-code: 245ms)
+ GET /plan 200 in 76ms (next.js: 14ms, application-code: 62ms)
+ GET /plan 200 in 2.4s (next.js: 104ms, application-code: 2.3s)
+✓ Compiled in 1288ms
+ GET /plan 200 in 1469ms (next.js: 1129ms, application-code: 340ms)
+ GET /plan 200 in 81ms (next.js: 6ms, application-code: 75ms)
+[?25h

@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --ink: #182025;
+  --paper: #fbf7ef;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(135deg, rgba(14, 143, 138, 0.12), transparent 34%),
+    linear-gradient(315deg, rgba(244, 168, 53, 0.16), transparent 36%),
+    var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.app-shell {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(14, 143, 138, 0.16), transparent 28%),
+    radial-gradient(circle at 92% 12%, rgba(232, 111, 92, 0.12), transparent 30%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(251, 247, 239, 0.92) 50%, rgba(229, 242, 239, 0.74));
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 8px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.58)),
+    rgba(255, 255, 255, 0.72);
+  box-shadow: 0 20px 60px rgba(24, 32, 37, 0.11);
+  backdrop-filter: blur(20px);
+}
+
+.dashboard-hero {
+  box-shadow:
+    0 24px 76px rgba(24, 32, 37, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.weather-metric {
+  background: rgba(255, 255, 255, 0.36);
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.weather-metric:hover {
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(14, 143, 138, 0.08);
+  transform: translateY(-1px);
+}
+
+.wardrobe-lab {
+  box-shadow:
+    0 22px 62px rgba(24, 32, 37, 0.11),
+    0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.wardrobe-photo-frame {
+  box-shadow: inset 0 0 0 1px rgba(24, 32, 37, 0.08);
+}
+
+.wardrobe-photo-frame::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.outfit-card {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.outfit-card:hover {
+  border-color: rgba(14, 143, 138, 0.22);
+  box-shadow: 0 24px 70px rgba(24, 32, 37, 0.13);
+  transform: translateY(-2px);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.welcome-hero {
+  background-image:
+    linear-gradient(90deg, rgba(8, 48, 60, 0.68) 0%, rgba(8, 48, 60, 0.22) 48%, rgba(8, 48, 60, 0.06) 74%),
+    linear-gradient(180deg, rgba(5, 27, 34, 0.08) 40%, rgba(5, 27, 34, 0.42) 100%),
+    url("/images/welcome-ocean-hero.png");
+  background-position: center;
+  background-size: cover;
+}
+
+.trip-start-hero {
+  background-image:
+    linear-gradient(90deg, rgba(10, 27, 30, 0.9) 0%, rgba(10, 27, 30, 0.68) 38%, rgba(10, 27, 30, 0.12) 70%),
+    linear-gradient(180deg, rgba(10, 27, 30, 0.12), rgba(10, 27, 30, 0.35)),
+    url("/images/travel-planner-hero.png");
+  background-position: center;
+  background-size: cover;
+}
+
+.destination-photo {
+  background-image:
+    linear-gradient(180deg, rgba(24, 32, 37, 0.08), rgba(24, 32, 37, 0.55)),
+    url("https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80");
+  background-position: center;
+  background-size: cover;
+}
+
+@media (max-width: 1023px) {
+  .welcome-hero {
+    background-image:
+      linear-gradient(180deg, rgba(8, 48, 60, 0.54) 0%, rgba(8, 48, 60, 0.12) 42%, rgba(8, 48, 60, 0.54) 100%),
+      url("/images/welcome-ocean-hero.png");
+    background-position: 52% center;
+  }
+
+  .trip-start-hero {
+    background-image:
+      linear-gradient(180deg, rgba(10, 27, 30, 0.52) 0%, rgba(10, 27, 30, 0.76) 52%, rgba(10, 27, 30, 0.92) 100%),
+      url("/images/travel-planner-hero.png");
+    background-position: 58% center;
+  }
+}
+
+@media (max-width: 767px) {
+  .welcome-dock {
+    max-height: min(390px, 45vh);
+    overflow-y: auto;
+  }
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

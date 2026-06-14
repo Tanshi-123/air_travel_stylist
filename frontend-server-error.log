@@ -1,0 +1,97 @@
+[browser] Uncaught ReferenceError: durationPresets is not defined
+    at TripStartPage (components/TripStartPage.tsx:408:22)
+    at TravelStylistApp (components/TravelStylistApp.tsx:225:7)
+    at PlanPage (app\plan\page.tsx:4:10)
+  406 |                   <FormLabel number="03">Duration</FormLabel>
+  407 |                   <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
+> 408 |                     {durationPresets.map((preset) => (
+      |                      ^
+  409 |                       <button
+  410 |                         key={preset.label}
+  411 |                         type="button"
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ ReferenceError: durationPresets is not defined
+    at TripStartPage (components\TripStartPage.tsx:406:22)
+  404 |                   <FormLabel number="03">Duration</FormLabel>
+  405 |                   <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
+> 406 |                     {durationPresets.map((preset) => (
+      |                      ^
+  407 |                       <button
+  408 |                         key={preset.label}
+  409 |                         type="button" {
+  digest: '327356114'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[browser] Uncaught ReferenceError: durationPresets is not defined
+    at TripStartPage (components/TripStartPage.tsx:406:22)
+    at Set.forEach (<anonymous>)
+    at TravelStylistApp (components/TravelStylistApp.tsx:225:7)
+    at PlanPage (app\plan\page.tsx:4:10)
+  404 |                   <FormLabel number="03">Duration</FormLabel>
+  405 |                   <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
+> 406 |                     {durationPresets.map((preset) => (
+      |                      ^
+  407 |                       <button
+  408 |                         key={preset.label}
+  409 |                         type="button"
+⨯ ReferenceError: durationPresets is not defined
+    at TripStartPage (components\TripStartPage.tsx:406:22)
+  404 |                   <FormLabel number="03">Duration</FormLabel>
+  405 |                   <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
+> 406 |                     {durationPresets.map((preset) => (
+      |                      ^
+  407 |                       <button
+  408 |                         key={preset.label}
+  409 |                         type="button" {
+  digest: '327356114'
+}
+[browser] Uncaught ReferenceError: durationPresets is not defined
+    at TripStartPage (components/TripStartPage.tsx:406:22)
+    at TravelStylistApp (components/TravelStylistApp.tsx:225:7)
+    at PlanPage (app\plan\page.tsx:4:10)
+  404 |                   <FormLabel number="03">Duration</FormLabel>
+  405 |                   <div className="mt-2 flex gap-2 overflow-x-auto scrollbar-none">
+> 406 |                     {durationPresets.map((preset) => (
+      |                      ^
+  407 |                       <button
+  408 |                         key={preset.label}
+  409 |                         type="button"
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ ReferenceError: DateInput is not defined
+    at TripStartPage (components\TripStartPage.tsx:405:20)
+  403 |                 <FormLabel number="03">Travel dates</FormLabel>
+  404 |                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
+> 405 |                   <DateInput
+      |                    ^
+  406 |                     label="From"
+  407 |                     value={startDate}
+  408 |                     min={todayIso()} {
+  digest: '1579692120'
+}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⨯ ReferenceError: DateInput is not defined
+    at TripStartPage (components\TripStartPage.tsx:405:20)
+  403 |                 <FormLabel number="03">Travel dates</FormLabel>
+  404 |                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
+> 405 |                   <DateInput
+      |                    ^
+  406 |                     label="From"
+  407 |                     value={startDate}
+  408 |                     min={todayIso()} {
+  digest: '1579692120'
+}
+[browser] Uncaught ReferenceError: DateInput is not defined
+    at TripStartPage (components/TripStartPage.tsx:405:20)
+    at TravelStylistApp (components/TravelStylistApp.tsx:225:7)
+    at PlanPage (app\plan\page.tsx:4:10)
+  403 |                 <FormLabel number="03">Travel dates</FormLabel>
+  404 |                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
+> 405 |                   <DateInput
+      |                    ^
+  406 |                     label="From"
+  407 |                     value={startDate}
+  408 |                     min={todayIso()}
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
