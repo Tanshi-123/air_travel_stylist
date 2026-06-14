@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import sqlite3
 import uuid
 from datetime import datetime
@@ -78,12 +79,20 @@ def init_schema() -> None:
                 season TEXT NOT NULL,
                 breathable INTEGER NOT NULL,
                 formality TEXT NOT NULL,
+                image_data TEXT,
                 created_at TEXT NOT NULL
             )
             """
         )
+        _ensure_column(conn, "wardrobe_items", "image_data", "TEXT")
         _repair_generic_uploads(conn)
         conn.commit()
+
+
+def _ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in columns:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
 def save_uploaded_item(file_storage: Any) -> dict[str, Any]:
@@ -93,6 +102,8 @@ def save_uploaded_item(file_storage: Any) -> dict[str, Any]:
     safe_name = f"{uuid.uuid4().hex}{extension}"
     target_path = UPLOAD_DIR / safe_name
     file_storage.save(target_path)
+    stored_path = _stored_image_path_value(target_path)
+    image_data = base64.b64encode(target_path.read_bytes()).decode("ascii")
 
     tags = analyze_image(target_path, original_name)
     created_at = datetime.utcnow().isoformat(timespec="seconds") + "Z"
@@ -101,12 +112,12 @@ def save_uploaded_item(file_storage: Any) -> dict[str, Any]:
             """
             INSERT INTO wardrobe_items (
                 image_path, original_filename, category, color, color_hex,
-                material, pattern, style, season, breathable, formality, created_at
+                material, pattern, style, season, breathable, formality, image_data, created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                str(target_path.relative_to(ROOT_DIR)),
+                stored_path,
                 original_name,
                 tags["category"],
                 tags["color"],
@@ -117,6 +128,7 @@ def save_uploaded_item(file_storage: Any) -> dict[str, Any]:
                 tags["season"],
                 int(tags["breathable"]),
                 tags["formality"],
+                image_data,
                 created_at,
             ),
         )
@@ -127,7 +139,7 @@ def save_uploaded_item(file_storage: Any) -> dict[str, Any]:
     return {
         **tags,
         "id": item_id,
-        "imagePath": str(target_path.relative_to(ROOT_DIR)),
+        "imagePath": stored_path,
         "imageUrl": f"/api/wardrobe/image/{target_path.name}",
         "name": display_name,
         "createdAt": created_at,
@@ -165,6 +177,29 @@ def list_wardrobe() -> list[dict[str, Any]]:
     return [_serialize_row(row) for row in rows]
 
 
+def get_uploaded_image(filename: str) -> tuple[bytes, str] | None:
+    init_schema()
+    safe_filename = Path(filename).name
+    file_path = UPLOAD_DIR / safe_filename
+    if file_path.is_file():
+        return file_path.read_bytes(), _image_mimetype(file_path.suffix)
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT image_path, image_data FROM wardrobe_items WHERE image_data IS NOT NULL"
+        ).fetchall()
+
+    for row in rows:
+        if Path(row["image_path"]).name != safe_filename:
+            continue
+        try:
+            return base64.b64decode(row["image_data"]), _image_mimetype(Path(safe_filename).suffix)
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
 def clear_wardrobe() -> None:
     init_schema()
     with sqlite3.connect(DB_PATH) as conn:
@@ -174,7 +209,7 @@ def clear_wardrobe() -> None:
         conn.commit()
 
     for row in rows:
-        path = (ROOT_DIR / row["image_path"]).resolve()
+        path = _resolve_image_path(row["image_path"])
         try:
             if path.is_file() and UPLOAD_DIR.resolve() in path.parents:
                 path.unlink()
@@ -194,7 +229,7 @@ def delete_wardrobe_item(item_id: int) -> bool:
 
     image_path = str(row["image_path"] or "")
     if image_path:
-        path = (ROOT_DIR / image_path).resolve()
+        path = _resolve_image_path(image_path)
         try:
             if path.is_file() and UPLOAD_DIR.resolve() in path.parents:
                 path.unlink()
@@ -311,6 +346,26 @@ def _display_name(original_name: str, tags: dict[str, Any]) -> str:
     return stem.title()
 
 
+def _image_mimetype(extension: str) -> str:
+    if extension.lower() in {".png"}:
+        return "image/png"
+    if extension.lower() in {".webp"}:
+        return "image/webp"
+    return "image/jpeg"
+
+
+def _stored_image_path_value(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT_DIR))
+    except ValueError:
+        return str(path)
+
+
+def _resolve_image_path(path_value: str) -> Path:
+    path = Path(path_value)
+    return path if path.is_absolute() else (ROOT_DIR / path).resolve()
+
+
 def _repair_generic_uploads(conn: sqlite3.Connection) -> None:
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
@@ -326,7 +381,7 @@ def _repair_generic_uploads(conn: sqlite3.Connection) -> None:
             row["category"] == "Hat" and "whatsapp" in original_name.lower()
         ):
             continue
-        image_path = ROOT_DIR / row["image_path"]
+        image_path = _resolve_image_path(row["image_path"])
         if not image_path.exists():
             continue
         tags = analyze_image(image_path, original_name)

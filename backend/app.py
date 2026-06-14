@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 
 try:
     from flask_cors import CORS
@@ -23,7 +23,7 @@ from backend.services.inspiration_service import get_destination_inspiration
 from backend.services.outfit_service import generate_outfits
 from backend.services.packing_service import generate_packing_list
 from backend.services.reel_service import get_reel_studio
-from backend.services.wardrobe_service import UPLOAD_DIR, clear_wardrobe, delete_wardrobe_item, init_schema, list_wardrobe, save_uploaded_item, seed_demo_wardrobe, update_wardrobe_item
+from backend.services.wardrobe_service import UPLOAD_DIR, clear_wardrobe, delete_wardrobe_item, get_uploaded_image, init_schema, list_wardrobe, save_uploaded_item, seed_demo_wardrobe, update_wardrobe_item
 
 
 def create_app() -> Flask:
@@ -102,6 +102,10 @@ def create_app() -> Flask:
 
     @app.get("/api/wardrobe/image/<path:filename>")
     def wardrobe_image(filename: str) -> Any:
+        image = get_uploaded_image(filename)
+        if image:
+            data, mimetype = image
+            return Response(data, mimetype=mimetype)
         return send_from_directory(UPLOAD_DIR, filename)
 
     @app.post("/api/outfits")
