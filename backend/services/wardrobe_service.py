@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 import uuid
 from datetime import datetime
+import os
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +11,7 @@ from PIL import Image
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT_DIR / "data"
+DATA_DIR = Path("/tmp/ai_travel_stylist") if os.getenv("VERCEL") else ROOT_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "wardrobe" / "uploads"
 DB_PATH = DATA_DIR / "travel_stylist.db"
 
