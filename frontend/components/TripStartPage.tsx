@@ -232,8 +232,8 @@ export function TripStartPage({
               <h1 className="max-w-[650px] font-serif text-5xl leading-[0.94] sm:text-6xl lg:text-[76px]">
                 Travel like you know the place.
               </h1>
-              <p className="mt-6 max-w-[570px] text-base leading-7 text-white/76 sm:text-lg">
-                Enter any city, region, or country. The guide reads live global weather, then builds style, culture, and packing decisions around it.
+                <p className="mt-6 max-w-[570px] text-base leading-7 text-white/76 sm:text-lg">
+                Enter any city, region, or country. Weather, outfits, culture, and packing are calculated from that destination.
               </p>
 
               <div className="mt-8 grid max-w-[610px] gap-px overflow-hidden rounded-[8px] border border-white/18 bg-white/18 sm:grid-cols-3">
@@ -338,17 +338,14 @@ export function TripStartPage({
                           <Check size={14} strokeWidth={3} />
                           {locationState === "approximate" ? "Approximate area found" : "GPS area found"}
                         </p>
-                        <p className="mt-1 truncate text-sm font-semibold">{detectedLocation.label}</p>
-                      </div>
-                      {detectedLocation.city ? (
-                        <button
-                          type="button"
-                          onClick={() => setDestination(detectedLocation.city ?? detectedLocation.shortLabel)}
-                          className="shrink-0 text-xs font-bold text-[#0b7772] underline decoration-[#0b7772]/30 underline-offset-4"
-                        >
-                          Set as destination
-                        </button>
-                      ) : null}
+                    <p className="mt-1 truncate text-sm font-semibold">{detectedLocation.label}</p>
+                    <p className="mt-1 text-[11px] leading-4 text-[#182b2f]/48">
+                      This is only your starting area. Destination weather still comes from the destination field above.
+                    </p>
+                  </div>
+                      <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#0b7772]">
+                        Origin only
+                      </span>
                     </div>
                     {detectedLocation.areaParts.length ? (
                       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -394,7 +391,7 @@ export function TripStartPage({
                 ) : (
                   <p className="mt-2 flex items-center gap-2 text-[11px] leading-5 text-[#182b2f]/42">
                     <ShieldCheck size={14} className="shrink-0" />
-                    GPS is requested only after you tap Use GPS. Coordinates are used once to identify your area.
+                    GPS is optional and only fills your starting point. Destination weather is fetched from the destination you enter above.
                   </p>
                 )}
               </div>

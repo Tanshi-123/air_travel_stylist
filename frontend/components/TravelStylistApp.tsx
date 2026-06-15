@@ -262,7 +262,8 @@ export function TravelStylistApp({
     nextTripDays = tripDays,
     nextStartDate = startDate,
     nextEndDate = endDate,
-    nextGender = gender
+    nextGender = gender,
+    preferredWardrobeItemId?: number
   ) {
     setLoading(true);
     setError("");
@@ -311,10 +312,14 @@ export function TravelStylistApp({
       if (wardrobeResult.status === "fulfilled") {
         setWardrobeItems(wardrobeResult.value.items);
         setLatestUploaded((current) => {
-          if (current && wardrobeResult.value.items.some((item) => item.id === current.id)) {
+          const preferred = preferredWardrobeItemId
+            ? wardrobeResult.value.items.find((item) => item.id === preferredWardrobeItemId)
+            : null;
+          if (preferred) return preferred;
+          if (current?.id && wardrobeResult.value.items.some((item) => item.id === current.id)) {
             return wardrobeResult.value.items.find((item) => item.id === current.id) ?? current;
           }
-          return wardrobeResult.value.items.find((item) => item.imageUrl) ?? null;
+          return current ?? wardrobeResult.value.items.find((item) => item.imageUrl) ?? null;
         });
       } else {
         failedSections.push("wardrobe");
@@ -373,10 +378,11 @@ export function TravelStylistApp({
         uploaded.push(await uploadWardrobeImage(uploadableFile));
       }
       setLatestUploaded(uploaded[uploaded.length - 1]?.item ?? null);
+      const latestId = uploaded[uploaded.length - 1]?.item.id;
       const wardrobeResult = await fetchWardrobe(false);
       setWardrobeItems(wardrobeResult.items);
       setShowOutfitAnalysis(false);
-      await runPlanningFlow();
+      await runPlanningFlow(destination, tripDays, startDate, endDate, gender, latestId);
     } catch (err) {
       setError("The image upload failed. Try a smaller photo or upload again after the backend redeploy finishes.");
     } finally {
@@ -503,6 +509,10 @@ export function TravelStylistApp({
               <span className="flex items-center gap-2 rounded-full border border-white/18 bg-white/14 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md">
                 <Sparkles size={14} />
                 Vibe check {analysis ? `${analysis.trendConfidence}%` : "loading"}
+              </span>
+              <span className="flex items-center gap-2 rounded-full border border-white/18 bg-white/14 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md">
+                <CloudSun size={14} />
+                Weather: destination
               </span>
               <span className="flex items-center gap-2 rounded-full border border-white/18 bg-white/14 px-3 py-1.5 text-xs font-bold text-white backdrop-blur-md">
                 <Shirt size={14} />
@@ -1262,12 +1272,26 @@ type StyleSuggestion = {
   subtitle: string;
   reason: string;
   swatch: string;
+  imageUrl?: string;
+  imageAlt?: string;
 };
 
 function StyleSuggestionCard({ suggestion }: { suggestion: StyleSuggestion }) {
   return (
-    <div className="grid grid-cols-[38px_1fr] gap-3 rounded-[8px] bg-white/82 p-3 shadow-sm">
-      <span className="mt-1 h-8 w-8 rounded-full border border-ink/8" style={{ backgroundColor: suggestion.swatch }} />
+    <div className="grid grid-cols-[76px_1fr] gap-3 rounded-[8px] bg-white/82 p-3 shadow-sm">
+      <span className="relative h-20 overflow-hidden rounded-[8px] border border-ink/8 bg-paper">
+        {suggestion.imageUrl ? (
+          <img
+            src={suggestion.imageUrl}
+            alt={suggestion.imageAlt ?? suggestion.title}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <span className="block h-full w-full" style={{ backgroundColor: suggestion.swatch }} />
+        )}
+        <span className="absolute bottom-2 left-2 h-5 w-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: suggestion.swatch }} />
+      </span>
       <span>
         <span className="block text-sm font-bold">{suggestion.title}</span>
         <span className="mt-0.5 block text-xs font-semibold text-ink/52">{suggestion.subtitle}</span>
@@ -1275,6 +1299,71 @@ function StyleSuggestionCard({ suggestion }: { suggestion: StyleSuggestion }) {
       </span>
     </div>
   );
+}
+
+function withVisualReference(suggestion: Omit<StyleSuggestion, "imageUrl" | "imageAlt">, category: string): StyleSuggestion {
+  const reference = accessoryReferenceFor(category, suggestion.title);
+  return {
+    ...suggestion,
+    imageUrl: reference.imageUrl,
+    imageAlt: reference.alt,
+  };
+}
+
+function accessoryReferenceFor(category: string, title: string) {
+  const text = `${category} ${title}`.toLowerCase();
+  if (text.includes("sunglasses")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=420&q=80",
+      alt: "Sunglasses style reference",
+    };
+  }
+  if (text.includes("sneaker") || text.includes("shoe") || text.includes("footwear")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=420&q=80",
+      alt: "Sneakers style reference",
+    };
+  }
+  if (text.includes("sandal") || text.includes("flat")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1603487742131-4160ec999306?auto=format&fit=crop&w=420&q=80",
+      alt: "Sandals style reference",
+    };
+  }
+  if (text.includes("bag")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=420&q=80",
+      alt: "Bag style reference",
+    };
+  }
+  if (text.includes("jewelry") || text.includes("hoop") || text.includes("bracelet") || text.includes("pendant")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=420&q=80",
+      alt: "Jewelry style reference",
+    };
+  }
+  if (text.includes("watch")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=420&q=80",
+      alt: "Watch style reference",
+    };
+  }
+  if (text.includes("belt")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=420&q=80",
+      alt: "Belt style reference",
+    };
+  }
+  if (text.includes("jacket") || text.includes("blazer")) {
+    return {
+      imageUrl: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=420&q=80",
+      alt: "Layering style reference",
+    };
+  }
+  return {
+    imageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=420&q=80",
+    alt: "Outfit styling reference",
+  };
 }
 
 type PairingGroup = {
@@ -1323,7 +1412,7 @@ function idealPairingSuggestions(
         reason: `A darker bottom adds contrast and makes the anchor item look more intentional.`,
         swatch: third.hex,
       },
-    ];
+    ].map((suggestion) => withVisualReference(suggestion, group.value));
   }
 
   if (targetSlot === "footwear") {
@@ -1346,7 +1435,7 @@ function idealPairingSuggestions(
         reason: "Tan reads warm and relaxed without fighting the anchor color.",
         swatch: "#b98555",
       },
-    ];
+    ].map((suggestion) => withVisualReference(suggestion, group.value));
   }
 
   if (["Jewelry", "Watch"].includes(group.value)) {
@@ -1370,7 +1459,7 @@ function idealPairingSuggestions(
         reason: "A pendant works especially well with kurtis, shirts, and plain tops.",
         swatch: "#f2dfbc",
       },
-    ];
+    ].map((suggestion) => withVisualReference(suggestion, group.value));
   }
 
   if (["Jacket", "Blazer"].includes(group.value)) {
@@ -1393,7 +1482,7 @@ function idealPairingSuggestions(
         reason: "Denim adds texture and works well with kurtis, dresses, and fitted tops.",
         swatch: "#3a608c",
       },
-    ];
+    ].map((suggestion) => withVisualReference(suggestion, group.value));
   }
 
   if (targetSlot === "top" || targetSlot === "onepiece") {
@@ -1416,7 +1505,7 @@ function idealPairingSuggestions(
         reason: "Blue and denim tones are reliable when you want the look to feel relaxed.",
         swatch: second.hex,
       },
-    ];
+    ].map((suggestion) => withVisualReference(suggestion, group.value));
   }
 
   return [
@@ -1438,7 +1527,7 @@ function idealPairingSuggestions(
       reason: `${group.label} should support the outfit palette instead of competing with the anchor item.`,
       swatch: second.hex,
     },
-  ];
+  ].map((suggestion) => withVisualReference(suggestion, group.value));
 }
 
 function completeOutfitFormula(base: WardrobeItem, destination: string): StyleSuggestion[] {
@@ -1473,7 +1562,7 @@ function completeOutfitFormula(base: WardrobeItem, destination: string): StyleSu
       reason: "Minimal jewelry adds polish without pulling attention away from the anchor item.",
       swatch: ["Yellow", "Marigold", "Terracotta", "Cream", "Olive", "Brown"].includes(base.color) ? "#d4af37" : "#c8ccd2",
     },
-  ];
+  ].map((suggestion) => withVisualReference(suggestion, suggestion.title));
 }
 
 function paletteForAnchor(color: string) {

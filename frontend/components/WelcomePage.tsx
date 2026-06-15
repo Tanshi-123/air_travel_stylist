@@ -9,8 +9,8 @@ type WelcomePageProps = {
 
 const signals = [
   {
-    label: "GPS location",
-    detail: "Find your starting area",
+    label: "Destination weather",
+    detail: "Forecast for the place you enter",
     Icon: LocateFixed
   },
   {
@@ -71,16 +71,16 @@ export function WelcomePage({ onExplore }: WelcomePageProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="welcome-dock mt-10 grid overflow-hidden rounded-[8px] border border-white/28 bg-[#f9fbfa]/94 text-[#173239] shadow-[0_20px_70px_rgba(0,0,0,0.2)] backdrop-blur-xl md:grid-cols-[1fr_1fr_1fr_auto]"
+            className="welcome-dock mt-10 grid overflow-hidden rounded-[8px] border border-white/40 bg-[#ffffff]/98 text-[#10292e] shadow-[0_20px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl md:grid-cols-[1fr_1fr_1fr_auto]"
           >
             {signals.map(({ label, detail, Icon }) => (
-              <div key={label} className="flex min-h-[86px] items-center gap-3 border-b border-[#173239]/9 px-4 py-4 md:border-b-0 md:border-r">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#dff1ef] text-[#0e8581]">
+              <div key={label} className="flex min-h-[86px] items-center gap-3 border-b border-[#173239]/12 px-4 py-4 md:border-b-0 md:border-r">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#d6eeea] text-[#08716e]">
                   <Icon size={18} />
                 </span>
                 <div>
-                  <p className="text-sm font-bold">{label}</p>
-                  <p className="mt-1 text-xs text-[#173239]/52">{detail}</p>
+                  <p className="text-sm font-black text-[#0d252b]">{label}</p>
+                  <p className="mt-1 text-xs font-semibold text-[#30474c]">{detail}</p>
                 </div>
               </div>
             ))}

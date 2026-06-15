@@ -16,6 +16,8 @@ DESTINATION_ALIASES = {
     "kashmir": "Srinagar",
     "rajasthan": "Jaipur",
     "goa": "Panaji",
+    "ladakh": "Leh",
+    "leh ladakh": "Leh",
     "korea": "Seoul",
     "south korea": "Seoul",
 }
