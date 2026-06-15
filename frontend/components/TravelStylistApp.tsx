@@ -172,8 +172,63 @@ async function prepareWardrobeUpload(file: File): Promise<File> {
   return new File([blob], `${safeUploadName(file.name)}-upload.jpg`, { type: "image/jpeg" });
 }
 
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Image preview could not be created."));
+    reader.readAsDataURL(file);
+  });
+}
+
 function safeUploadName(filename: string) {
   return filename.replace(/\.[^.]+$/, "").replace(/[^a-z0-9_-]+/gi, "-").slice(0, 48) || "wardrobe";
+}
+
+function mergeWardrobeItems(current: WardrobeItem[], incoming: WardrobeItem[]) {
+  const byId = new Map<number, WardrobeItem>();
+  [...current, ...incoming].forEach((item) => byId.set(item.id, item));
+  return Array.from(byId.values()).sort((first, second) => {
+    return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+  });
+}
+
+function recategorizeWardrobeItem(item: WardrobeItem, category: string): WardrobeItem {
+  const material = materialForCategory(category, item.color);
+  const breathable = ["Linen", "Cotton", "Canvas"].includes(material);
+  return {
+    ...item,
+    category,
+    material,
+    breathable,
+    style: styleForCategory(category),
+    season: breathable ? "Summer" : "All-season",
+    formality: ["Shirt", "Dress", "Blazer", "Loafers", "Topwear", "Jewelry", "Watch", "Bag", "Belt"].includes(category)
+      ? "Smart"
+      : "Casual",
+    name: `${item.color} ${material} ${category}`,
+  };
+}
+
+function materialForCategory(category: string, color: string) {
+  if (["Shirt", "T-shirt", "Shorts", "Topwear", "Dress"].includes(category)) {
+    return ["White", "Beige", "Sky Blue", "Cream"].includes(color) ? "Linen" : "Cotton";
+  }
+  if (["Jeans", "Skirt"].includes(category) && ["Denim Blue", "Charcoal", "Black"].includes(color)) return "Denim";
+  if (category === "Sneakers") return "Canvas";
+  if (["Sandals", "Loafers", "Bag", "Belt"].includes(category)) return "Leather";
+  if (["Jewelry", "Watch"].includes(category)) return "Metal";
+  if (category === "Sunglasses") return "Acetate";
+  return "Mixed";
+}
+
+function styleForCategory(category: string) {
+  if (["Sandals", "Shorts", "Hat", "Sunglasses"].includes(category)) return "Beachwear";
+  if (["Shirt", "Dress", "Blazer", "Loafers", "Topwear", "Jewelry", "Watch", "Bag", "Belt"].includes(category)) {
+    return "Smart Casual";
+  }
+  if (["Sneakers", "Jeans", "T-shirt", "Skirt"].includes(category)) return "Streetwear";
+  return "Casual";
 }
 
 export function TravelStylistApp({
@@ -263,7 +318,8 @@ export function TravelStylistApp({
     nextStartDate = startDate,
     nextEndDate = endDate,
     nextGender = gender,
-    preferredWardrobeItemId?: number
+    preferredWardrobeItemId?: number,
+    keepLocalWardrobe = false
   ) {
     setLoading(true);
     setError("");
@@ -310,16 +366,19 @@ export function TravelStylistApp({
         failedSections.push("reels");
       }
       if (wardrobeResult.status === "fulfilled") {
-        setWardrobeItems(wardrobeResult.value.items);
+        if (!keepLocalWardrobe) {
+          setWardrobeItems(wardrobeResult.value.items);
+        }
         setLatestUploaded((current) => {
+          const sourceItems = keepLocalWardrobe ? wardrobeItems : wardrobeResult.value.items;
           const preferred = preferredWardrobeItemId
-            ? wardrobeResult.value.items.find((item) => item.id === preferredWardrobeItemId)
+            ? sourceItems.find((item) => item.id === preferredWardrobeItemId)
             : null;
           if (preferred) return preferred;
-          if (current?.id && wardrobeResult.value.items.some((item) => item.id === current.id)) {
-            return wardrobeResult.value.items.find((item) => item.id === current.id) ?? current;
+          if (current?.id && sourceItems.some((item) => item.id === current.id)) {
+            return sourceItems.find((item) => item.id === current.id) ?? current;
           }
-          return current ?? wardrobeResult.value.items.find((item) => item.imageUrl) ?? null;
+          return current ?? sourceItems.find((item) => item.imageUrl) ?? null;
         });
       } else {
         failedSections.push("wardrobe");
@@ -372,17 +431,18 @@ export function TravelStylistApp({
     setLoading(true);
     setError("");
     try {
-      const uploaded: { item: WardrobeItem }[] = [];
+      const uploadedItems: WardrobeItem[] = [];
       for (const file of files) {
         const uploadableFile = await prepareWardrobeUpload(file);
-        uploaded.push(await uploadWardrobeImage(uploadableFile));
+        const previewUrl = await fileToDataUrl(uploadableFile);
+        const result = await uploadWardrobeImage(uploadableFile);
+        uploadedItems.push({ ...result.item, imageUrl: previewUrl });
       }
-      setLatestUploaded(uploaded[uploaded.length - 1]?.item ?? null);
-      const latestId = uploaded[uploaded.length - 1]?.item.id;
-      const wardrobeResult = await fetchWardrobe(false);
-      setWardrobeItems(wardrobeResult.items);
+      const latestItem = uploadedItems[uploadedItems.length - 1] ?? null;
+      setWardrobeItems((current) => mergeWardrobeItems(current, uploadedItems));
+      setLatestUploaded(latestItem);
       setShowOutfitAnalysis(false);
-      await runPlanningFlow(destination, tripDays, startDate, endDate, gender, latestId);
+      await runPlanningFlow(destination, tripDays, startDate, endDate, gender, latestItem?.id, true);
     } catch (err) {
       setError("The image upload failed. Try a smaller photo or upload again after the backend redeploy finishes.");
     } finally {
@@ -403,15 +463,17 @@ export function TravelStylistApp({
   async function handleWardrobeCategoryChange(item: WardrobeItem, category: string) {
     setLoading(true);
     setError("");
+    const localUpdated = recategorizeWardrobeItem(item, category);
+    setWardrobeItems((current) => current.map((candidate) => (candidate.id === item.id ? localUpdated : candidate)));
+    setLatestUploaded((current) => (current?.id === item.id ? localUpdated : current));
+    setShowOutfitAnalysis(false);
     try {
       const result = await updateWardrobeItem(item.id, { category });
-      setLatestUploaded(result.item);
-      const wardrobeResult = await fetchWardrobe(false);
-      setWardrobeItems(wardrobeResult.items);
-      setShowOutfitAnalysis(false);
-      await runPlanningFlow();
+      const serverUpdated = { ...result.item, imageUrl: item.imageUrl };
+      setWardrobeItems((current) => current.map((candidate) => (candidate.id === item.id ? serverUpdated : candidate)));
+      setLatestUploaded((current) => (current?.id === item.id ? serverUpdated : current));
     } catch {
-      setError("The wardrobe item could not be updated. Try again.");
+      setError("Saved the category locally. The deployed backend may need a moment to sync.");
     } finally {
       setLoading(false);
     }
@@ -420,14 +482,14 @@ export function TravelStylistApp({
   async function handleWardrobeDelete(item: WardrobeItem) {
     setLoading(true);
     setError("");
+    const remainingItems = wardrobeItems.filter((candidate) => candidate.id !== item.id);
+    setWardrobeItems(remainingItems);
+    setLatestUploaded((current) => (current?.id === item.id ? remainingItems[0] ?? null : current));
+    setShowOutfitAnalysis(false);
     try {
-      const result = await deleteWardrobeItem(item.id);
-      setWardrobeItems(result.items);
-      setLatestUploaded(result.items.find((nextItem) => nextItem.imageUrl) ?? null);
-      setShowOutfitAnalysis(false);
-      await runPlanningFlow();
+      await deleteWardrobeItem(item.id);
     } catch {
-      setError("The wardrobe item could not be deleted. Try again.");
+      // Vercel may recycle temporary upload storage between requests; the local session delete still succeeded.
     } finally {
       setLoading(false);
     }
@@ -435,7 +497,7 @@ export function TravelStylistApp({
 
   async function analyzeUploadedOutfits() {
     setShowOutfitAnalysis(true);
-    await runPlanningFlow();
+    await runPlanningFlow(destination, tripDays, startDate, endDate, gender, latestUploaded?.id, true);
   }
 
   if (screen === "welcome") {
@@ -1256,7 +1318,7 @@ function FashionAssistantResult({
       ) : (
         <div className="grid gap-2">
           <p className="rounded-[8px] bg-white/72 px-3 py-2 text-xs leading-5 text-ink/54">
-            No uploaded {group.label.toLowerCase()} candidates yet. Upload options like blue jeans, grey jeans, or black jeans and this section will rank them.
+            No uploaded {group.label.toLowerCase()} candidates yet. Upload {exampleOptionsForGroup(group.label)} and this section will rank them.
           </p>
           {idealSuggestions.map((suggestion) => (
             <StyleSuggestionCard key={suggestion.title} suggestion={suggestion} />
@@ -1312,58 +1374,101 @@ function withVisualReference(suggestion: Omit<StyleSuggestion, "imageUrl" | "ima
 
 function accessoryReferenceFor(category: string, title: string) {
   const text = `${category} ${title}`.toLowerCase();
-  if (text.includes("sunglasses")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=420&q=80",
-      alt: "Sunglasses style reference",
-    };
-  }
-  if (text.includes("sneaker") || text.includes("shoe") || text.includes("footwear")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=420&q=80",
-      alt: "Sneakers style reference",
-    };
-  }
-  if (text.includes("sandal") || text.includes("flat")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1603487742131-4160ec999306?auto=format&fit=crop&w=420&q=80",
-      alt: "Sandals style reference",
-    };
-  }
-  if (text.includes("bag")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=420&q=80",
-      alt: "Bag style reference",
-    };
-  }
-  if (text.includes("jewelry") || text.includes("hoop") || text.includes("bracelet") || text.includes("pendant")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=420&q=80",
-      alt: "Jewelry style reference",
-    };
-  }
-  if (text.includes("watch")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=420&q=80",
-      alt: "Watch style reference",
-    };
-  }
-  if (text.includes("belt")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=420&q=80",
-      alt: "Belt style reference",
-    };
-  }
-  if (text.includes("jacket") || text.includes("blazer")) {
-    return {
-      imageUrl: "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=420&q=80",
-      alt: "Layering style reference",
-    };
-  }
+  const color = referenceColorForText(text);
+  const kind = referenceKindForText(text);
   return {
-    imageUrl: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=420&q=80",
-    alt: "Outfit styling reference",
+    imageUrl: referenceSvgDataUrl(kind, color.hex, color.label),
+    alt: `${color.label} ${kind} style reference`,
   };
+}
+
+function referenceColorForText(text: string) {
+  const colors = [
+    { keys: ["cream", "ivory"], label: "Cream", hex: "#eee4cd" },
+    { keys: ["white"], label: "White", hex: "#f6f4ee" },
+    { keys: ["denim", "blue"], label: "Denim Blue", hex: "#3a608c" },
+    { keys: ["pink"], label: "Pink", hex: "#d67796" },
+    { keys: ["black"], label: "Black", hex: "#18191d" },
+    { keys: ["charcoal", "grey", "gray"], label: "Charcoal", hex: "#55585a" },
+    { keys: ["tan"], label: "Tan", hex: "#b98555" },
+    { keys: ["brown"], label: "Brown", hex: "#754c31" },
+    { keys: ["olive"], label: "Olive", hex: "#6a7e4c" },
+    { keys: ["gold"], label: "Gold", hex: "#d4af37" },
+    { keys: ["silver"], label: "Silver", hex: "#c8ccd2" },
+  ];
+  return colors.find((color) => color.keys.some((key) => text.includes(key))) ?? { label: "Neutral", hex: "#d8cfc0" };
+}
+
+function referenceKindForText(text: string) {
+  if (text.includes("sunglasses")) return "sunglasses";
+  if (text.includes("sneaker") || text.includes("shoe")) return "sneakers";
+  if (text.includes("sandal") || text.includes("flat")) return "sandals";
+  if (text.includes("bag")) return "bag";
+  if (text.includes("watch")) return "watch";
+  if (text.includes("belt")) return "belt";
+  if (text.includes("jewelry") || text.includes("hoop") || text.includes("bracelet") || text.includes("pendant")) return "jewelry";
+  if (text.includes("jacket") || text.includes("blazer")) return "jacket";
+  if (text.includes("jeans") || text.includes("trouser") || text.includes("pants")) return "bottom";
+  if (text.includes("dress")) return "dress";
+  return "top";
+}
+
+function referenceSvgDataUrl(kind: string, color: string, label: string) {
+  const darkText = ["#18191d", "#3a608c", "#55585a", "#754c31", "#6a7e4c"].includes(color) ? "#ffffff" : "#182b2f";
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fbfaf6"/>
+          <stop offset="1" stop-color="#e8f0ed"/>
+        </linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#10292e" flood-opacity=".18"/>
+        </filter>
+      </defs>
+      <rect width="420" height="420" rx="34" fill="url(#bg)"/>
+      ${referenceShapeSvg(kind, color)}
+      <rect x="32" y="326" width="356" height="54" rx="18" fill="rgba(255,255,255,.78)"/>
+      <circle cx="64" cy="353" r="16" fill="${color}" stroke="#fff" stroke-width="4"/>
+      <text x="92" y="347" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="800" fill="#182b2f">${escapeSvg(label)}</text>
+      <text x="92" y="368" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700" fill="#5b6b6f">${escapeSvg(kind)}</text>
+    </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.replace(/\s+/g, " ").trim())}`;
+}
+
+function referenceShapeSvg(kind: string, color: string) {
+  if (kind === "jacket") {
+    return `<g filter="url(#shadow)"><path d="M142 104l42-22h52l42 22 38 56-37 24v114H141V184l-37-24 38-56z" fill="${color}"/><path d="M184 82l26 58 26-58M210 140v158M159 126l-24 46M261 126l24 46" fill="none" stroke="rgba(255,255,255,.58)" stroke-width="8" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "sneakers") {
+    return `<g filter="url(#shadow)"><path d="M88 220c54 8 88-22 128-8 42 15 62 48 116 51 19 1 30 13 27 28H96c-26 0-35-42-8-71z" fill="${color}"/><path d="M124 238h80M146 216l24 38M178 214l24 38" stroke="rgba(255,255,255,.62)" stroke-width="9" stroke-linecap="round"/><path d="M90 290h268" stroke="#182b2f" stroke-opacity=".16" stroke-width="12"/></g>`;
+  }
+  if (kind === "sandals") {
+    return `<g filter="url(#shadow)"><path d="M132 118c48 32 84 101 80 199-1 24-18 38-41 32-54-14-76-112-64-184 4-25 10-41 25-47zM268 118c-48 32-84 101-80 199 1 24 18 38 41 32 54-14 76-112 64-184-4-25-10-41-25-47z" fill="${color}"/><path d="M139 168c22 28 47 45 68 57M281 168c-22 28-47 45-68 57" stroke="rgba(255,255,255,.64)" stroke-width="10" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "bag") {
+    return `<g filter="url(#shadow)"><rect x="112" y="150" width="196" height="154" rx="28" fill="${color}"/><path d="M160 158c0-47 100-47 100 0" fill="none" stroke="#182b2f" stroke-opacity=".28" stroke-width="16" stroke-linecap="round"/><circle cx="166" cy="190" r="8" fill="rgba(255,255,255,.65)"/><circle cx="254" cy="190" r="8" fill="rgba(255,255,255,.65)"/></g>`;
+  }
+  if (kind === "jewelry") {
+    return `<g filter="url(#shadow)" fill="none" stroke="${color}" stroke-width="18"><circle cx="166" cy="174" r="52"/><circle cx="254" cy="174" r="52"/><path d="M142 270c40 30 96 30 136 0" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "watch") {
+    return `<g filter="url(#shadow)"><rect x="176" y="72" width="68" height="276" rx="28" fill="${color}"/><circle cx="210" cy="210" r="70" fill="#fbfaf6" stroke="${color}" stroke-width="18"/><path d="M210 174v42l30 20" stroke="#182b2f" stroke-width="10" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "belt") {
+    return `<g filter="url(#shadow)"><rect x="70" y="188" width="280" height="54" rx="20" fill="${color}"/><rect x="248" y="176" width="76" height="78" rx="15" fill="none" stroke="#d4af37" stroke-width="14"/><circle cx="112" cy="215" r="8" fill="rgba(255,255,255,.62)"/></g>`;
+  }
+  if (kind === "bottom") {
+    return `<g filter="url(#shadow)"><path d="M158 84h104l24 238h-64l-12-134-20 134h-64l32-238z" fill="${color}"/><path d="M158 124h104M210 92v70" stroke="rgba(255,255,255,.5)" stroke-width="8" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "dress") {
+    return `<g filter="url(#shadow)"><path d="M176 82h68l28 72-20 28 48 140H120l48-140-20-28 28-72z" fill="${color}"/><path d="M176 82l34 72 34-72" stroke="rgba(255,255,255,.55)" stroke-width="8" stroke-linecap="round"/></g>`;
+  }
+  return `<g filter="url(#shadow)"><path d="M154 94l38-20h36l38 20 48 54-38 34v126H144V182l-38-34 48-54z" fill="${color}"/><path d="M192 74l18 44 18-44" stroke="rgba(255,255,255,.55)" stroke-width="8" stroke-linecap="round"/></g>`;
+}
+
+function escapeSvg(value: string) {
+  return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[char] ?? char));
 }
 
 type PairingGroup = {
@@ -1377,6 +1482,22 @@ function pairingGroupFromGoal(goal: string): PairingGroup {
     return { label: COMPLETE_OUTFIT_VALUE, value: COMPLETE_OUTFIT_VALUE, categories: [] };
   }
   return { label: goal, value: goal, categories: [goal] };
+}
+
+function exampleOptionsForGroup(label: string) {
+  const examples: Record<string, string> = {
+    Jeans: "options like blue jeans, grey jeans, and black jeans",
+    Jacket: "options like cream jacket, denim jacket, and black jacket",
+    Blazer: "options like cream blazer, charcoal blazer, and black blazer",
+    Sneakers: "options like white sneakers, black sneakers, and tan sneakers",
+    Sandals: "options like tan sandals, black sandals, and metallic flats",
+    Bag: "options like cream bag, tan bag, and black bag",
+    Sunglasses: "options like brown tinted sunglasses, black sunglasses, and gold-frame sunglasses",
+    Jewelry: "options like gold hoops, silver pendant, and bracelet stack",
+    Watch: "options like gold watch, silver watch, and black strap watch",
+    Belt: "options like brown belt, black belt, and tan belt",
+  };
+  return examples[label] ?? `different ${label.toLowerCase()} options`;
 }
 
 function idealPairingSuggestions(

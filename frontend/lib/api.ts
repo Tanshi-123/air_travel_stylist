@@ -316,7 +316,7 @@ export async function fetchInspiration(destination: string, gender = "women") {
 
 export function wardrobeImageUrl(path?: string | null) {
   if (!path) return null;
-  return path.startsWith("http") ? path : `${API_BASE}${path}`;
+  return path.startsWith("http") || path.startsWith("data:") || path.startsWith("blob:") ? path : `${API_BASE}${path}`;
 }
 
 export async function uploadWardrobeImage(file: File) {
