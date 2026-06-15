@@ -561,7 +561,7 @@ export function TravelStylistApp({
             <div className="mt-2 flex flex-wrap items-end gap-x-5 gap-y-2">
               <h1 className="text-3xl font-semibold sm:text-5xl">{analysis?.destination ?? destination}</h1>
               <p className="pb-1 text-sm font-medium text-white/72">
-                From {origin} / {startDate} to {endDate} / <span className="capitalize">{gender}</span>
+                {startDate} to {endDate} / <span className="capitalize">{gender}</span>
               </p>
             </div>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/76">
@@ -1340,8 +1340,8 @@ type StyleSuggestion = {
 
 function StyleSuggestionCard({ suggestion }: { suggestion: StyleSuggestion }) {
   return (
-    <div className="grid grid-cols-[76px_1fr] gap-3 rounded-[8px] bg-white/82 p-3 shadow-sm">
-      <span className="relative h-20 overflow-hidden rounded-[8px] border border-ink/8 bg-paper">
+    <div className="grid gap-4 rounded-[8px] bg-white/86 p-3 shadow-sm sm:grid-cols-[132px_1fr]">
+      <span className="relative h-36 overflow-hidden rounded-[8px] border border-ink/8 bg-paper sm:h-32">
         {suggestion.imageUrl ? (
           <img
             src={suggestion.imageUrl}
@@ -1401,10 +1401,13 @@ function referenceColorForText(text: string) {
 
 function referenceKindForText(text: string) {
   if (text.includes("sunglasses")) return "sunglasses";
+  if (text.includes("watch")) return "watch";
+  if (text.includes("blazer")) return "blazer";
+  if (text.includes("shorts")) return "shorts";
+  if (text.includes("skirt")) return "skirt";
   if (text.includes("sneaker") || text.includes("shoe")) return "sneakers";
   if (text.includes("sandal") || text.includes("flat")) return "sandals";
   if (text.includes("bag")) return "bag";
-  if (text.includes("watch")) return "watch";
   if (text.includes("belt")) return "belt";
   if (text.includes("jewelry") || text.includes("hoop") || text.includes("bracelet") || text.includes("pendant")) return "jewelry";
   if (text.includes("jacket") || text.includes("blazer")) return "jacket";
@@ -1437,8 +1440,17 @@ function referenceSvgDataUrl(kind: string, color: string, label: string) {
 }
 
 function referenceShapeSvg(kind: string, color: string) {
+  if (kind === "blazer") {
+    return `<g filter="url(#shadow)"><path d="M136 96l48-22h52l48 22 34 212h-83l-25-146-25 146h-83l34-212z" fill="${color}"/><path d="M184 76l26 78 26-78M210 154v152M170 126l40 48 40-48" fill="none" stroke="rgba(255,255,255,.58)" stroke-width="8" stroke-linecap="round"/></g>`;
+  }
   if (kind === "jacket") {
     return `<g filter="url(#shadow)"><path d="M142 104l42-22h52l42 22 38 56-37 24v114H141V184l-37-24 38-56z" fill="${color}"/><path d="M184 82l26 58 26-58M210 140v158M159 126l-24 46M261 126l24 46" fill="none" stroke="rgba(255,255,255,.58)" stroke-width="8" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "shorts") {
+    return `<g filter="url(#shadow)"><path d="M128 126h164l26 168h-80l-28-82-28 82h-80l26-168z" fill="${color}"/><path d="M128 158h164M210 132v80" stroke="rgba(255,255,255,.55)" stroke-width="8" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "skirt") {
+    return `<g filter="url(#shadow)"><path d="M146 112h128l54 196H92l54-196z" fill="${color}"/><path d="M146 144h128M178 124l-28 170M242 124l28 170" stroke="rgba(255,255,255,.55)" stroke-width="8" stroke-linecap="round"/></g>`;
   }
   if (kind === "sneakers") {
     return `<g filter="url(#shadow)"><path d="M88 220c54 8 88-22 128-8 42 15 62 48 116 51 19 1 30 13 27 28H96c-26 0-35-42-8-71z" fill="${color}"/><path d="M124 238h80M146 216l24 38M178 214l24 38" stroke="rgba(255,255,255,.62)" stroke-width="9" stroke-linecap="round"/><path d="M90 290h268" stroke="#182b2f" stroke-opacity=".16" stroke-width="12"/></g>`;

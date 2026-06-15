@@ -63,7 +63,7 @@ export function TripStartPage({
   onStart
 }: TripStartPageProps) {
   const [destination, setDestination] = useState(initialDestination);
-  const [origin, setOrigin] = useState(initialOrigin === "Current location" ? "" : initialOrigin);
+  const [origin, setOrigin] = useState(initialOrigin);
   const [tripDays, setTripDays] = useState(initialTripDays);
   const [travelStyle, setTravelStyle] = useState(initialTravelStyle);
   const [startDate, setStartDate] = useState(initialStartDate);
@@ -89,7 +89,7 @@ export function TripStartPage({
 
   useEffect(() => {
     setDestination(initialDestination);
-    setOrigin(initialOrigin === "Current location" ? "" : initialOrigin);
+    setOrigin(initialOrigin);
     setTripDays(initialTripDays);
     setTravelStyle(initialTravelStyle);
     setStartDate(initialStartDate);
@@ -113,10 +113,13 @@ export function TripStartPage({
         try {
           const result = await reverseGeocode(coords.latitude, coords.longitude);
           setDetectedLocation(result);
-          setOrigin(result.shortLabel);
+          const resolvedDestination = destinationFromDetectedLocation(result);
+          setDestination(resolvedDestination);
+          setOrigin(resolvedDestination);
           setLocationState("found");
         } catch {
           const coordinates = `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`;
+          setDestination(coordinates);
           setOrigin(coordinates);
           setDetectedLocation({
             resolved: false,
@@ -141,7 +144,7 @@ export function TripStartPage({
       (error) => {
         if (error.code === error.PERMISSION_DENIED) {
           setLocationState("denied");
-          setFormError("GPS access is blocked. Enable location for localhost in your browser, or enter your city.");
+          setFormError("GPS access is blocked. Enable location for this site, or type the destination manually.");
           return;
         }
         setLocationState("error");
@@ -161,12 +164,14 @@ export function TripStartPage({
     try {
       const result = await detectApproximateLocation();
       setDetectedLocation(result);
-      setOrigin(result.shortLabel);
+      const resolvedDestination = destinationFromDetectedLocation(result);
+      setDestination(resolvedDestination);
+      setOrigin(resolvedDestination);
       setLocationState("approximate");
       setShowLocationHelp(false);
     } catch {
       setLocationState("denied");
-      setFormError("Approximate location is unavailable. Enter your starting city manually.");
+      setFormError("Approximate location is unavailable. Type the destination manually.");
     }
   }
 
@@ -189,7 +194,7 @@ export function TripStartPage({
       setFormError("Choose travel dates within the next 7 days.");
       return;
     }
-    onStart(destination.trim(), days, origin.trim() || "Current location", travelStyle, startDate, endDate, gender);
+    onStart(destination.trim(), days, origin.trim() || destination.trim(), travelStyle, startDate, endDate, gender);
   }
 
   return (
@@ -273,41 +278,25 @@ export function TripStartPage({
                 <FormLabel number="01" htmlFor="destination">
                   Destination
                 </FormLabel>
-                <div className="mt-2 flex h-14 items-center gap-3 rounded-[8px] border border-[#182b2f]/14 bg-white px-4 transition focus-within:border-[#0e8f8a] focus-within:ring-2 focus-within:ring-[#0e8f8a]/12">
-                  <Compass size={19} className="shrink-0 text-[#0e8f8a]" />
-                  <input
-                    id="destination"
-                    list="destination-suggestions"
-                    value={destination}
-                    onChange={(event) => setDestination(event.target.value)}
-                    placeholder="City, region, or country"
-                    className="min-w-0 flex-1 bg-transparent font-semibold outline-none placeholder:font-normal placeholder:text-[#182b2f]/34"
-                  />
-                  <datalist id="destination-suggestions">
-                    {popularDestinations.map((item) => (
-                      <option key={item} value={item} />
-                    ))}
-                  </datalist>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <FormLabel number="02" htmlFor="origin">
-                  Starting point
-                </FormLabel>
                 <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto]">
-                  <div className="flex h-14 items-center gap-3 rounded-[8px] border border-[#182b2f]/14 bg-white px-4 focus-within:border-[#0e8f8a]">
-                    <MapPin size={18} className="shrink-0 text-[#182b2f]/38" />
+                  <div className="flex h-14 items-center gap-3 rounded-[8px] border border-[#182b2f]/14 bg-white px-4 transition focus-within:border-[#0e8f8a] focus-within:ring-2 focus-within:ring-[#0e8f8a]/12">
+                    <Compass size={19} className="shrink-0 text-[#0e8f8a]" />
                     <input
-                      id="origin"
-                      value={origin}
+                      id="destination"
+                      list="destination-suggestions"
+                      value={destination}
                       onChange={(event) => {
-                        setOrigin(event.target.value);
+                        setDestination(event.target.value);
                         setDetectedLocation(null);
                       }}
-                      placeholder="Enter your city"
-                      className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:font-normal placeholder:text-[#182b2f]/34"
+                      placeholder="Type destination or use GPS"
+                      className="min-w-0 flex-1 bg-transparent font-semibold outline-none placeholder:font-normal placeholder:text-[#182b2f]/34"
                     />
+                    <datalist id="destination-suggestions">
+                      {popularDestinations.map((item) => (
+                        <option key={item} value={item} />
+                      ))}
+                    </datalist>
                   </div>
                   <button
                     type="button"
@@ -336,15 +325,15 @@ export function TripStartPage({
                       <div className="min-w-0">
                         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#0b7772]">
                           <Check size={14} strokeWidth={3} />
-                          {locationState === "approximate" ? "Approximate area found" : "GPS area found"}
+                          {locationState === "approximate" ? "Approximate destination found" : "GPS destination found"}
                         </p>
-                    <p className="mt-1 truncate text-sm font-semibold">{detectedLocation.label}</p>
-                    <p className="mt-1 text-[11px] leading-4 text-[#182b2f]/48">
-                      This is only your starting area. Destination weather still comes from the destination field above.
-                    </p>
-                  </div>
+                        <p className="mt-1 truncate text-sm font-semibold">{destination}</p>
+                        <p className="mt-1 text-[11px] leading-4 text-[#182b2f]/48">
+                          This destination will be used for weather, outfits, packing, and local recommendations.
+                        </p>
+                      </div>
                       <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#0b7772]">
-                        Origin only
+                        Weather source
                       </span>
                     </div>
                     {detectedLocation.areaParts.length ? (
@@ -384,20 +373,20 @@ export function TripStartPage({
                         onClick={() => void detectApproximateArea()}
                         className="font-bold text-[#0b7772] underline underline-offset-4"
                       >
-                        Use approximate area
+                        Use approximate destination
                       </button>
                     </div>
                   </div>
                 ) : (
                   <p className="mt-2 flex items-center gap-2 text-[11px] leading-5 text-[#182b2f]/42">
                     <ShieldCheck size={14} className="shrink-0" />
-                    GPS is optional and only fills your starting point. Destination weather is fetched from the destination you enter above.
+                    Choose a destination by typing or GPS. Weather is always fetched for this selected destination.
                   </p>
                 )}
               </div>
 
               <div className="mt-4">
-                <FormLabel number="03">Travel dates</FormLabel>
+                <FormLabel number="02">Travel dates</FormLabel>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <DateInput
                     label="From"
@@ -428,7 +417,7 @@ export function TripStartPage({
               </div>
 
               <div className="mt-4">
-                <FormLabel number="04">Style profile</FormLabel>
+                <FormLabel number="03">Style profile</FormLabel>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   {[
                     { id: "women", label: "Women", caption: "Kurti, dresses, layers, accessories" },
@@ -452,7 +441,7 @@ export function TripStartPage({
               </div>
 
               <div className="mt-4">
-                <FormLabel number="05">Travel focus</FormLabel>
+                <FormLabel number="04">Travel focus</FormLabel>
                 <div className="mt-2 grid grid-cols-3 gap-2">
                   {travelStyles.map(({ id, label, caption, Icon }) => (
                     <button
@@ -506,7 +495,7 @@ export function TripStartPage({
               </button>
             </div>
             <ol className="mt-4 space-y-3 text-sm leading-6 text-[#182b2f]/68">
-              <li><strong>1.</strong> Click the site-controls icon beside <strong>localhost:3000</strong>.</li>
+              <li><strong>1.</strong> Click the site-controls icon beside the website address.</li>
               <li><strong>2.</strong> Change <strong>Location</strong> to <strong>Allow</strong>.</li>
               <li><strong>3.</strong> Reload the page, then tap <strong>Use GPS</strong>.</li>
             </ol>
@@ -516,7 +505,7 @@ export function TripStartPage({
                 onClick={() => void detectApproximateArea()}
                 className="h-11 rounded-[8px] bg-[#e5f2ef] px-4 text-sm font-bold text-[#0b7772]"
               >
-                Use approximate area
+                Use approximate destination
               </button>
               <button
                 type="button"
@@ -527,7 +516,7 @@ export function TripStartPage({
               </button>
             </div>
             <p className="mt-3 text-[10px] leading-4 text-[#182b2f]/42">
-              Approximate area uses your public IP and does not provide street-level accuracy.
+              Approximate destination uses your public IP and does not provide street-level accuracy.
             </p>
           </div>
         </div>
@@ -614,10 +603,21 @@ function clampEndDate(startIso: string, endIso: string) {
   return endIso;
 }
 
+function destinationFromDetectedLocation(location: DetectedLocation) {
+  return (
+    location.city ||
+    location.district ||
+    location.state ||
+    location.country ||
+    location.shortLabel ||
+    `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`
+  );
+}
+
 function locationButtonLabel(state: LocationState) {
   if (state === "locating") return "Locating...";
-  if (state === "found") return "Located";
-  if (state === "approximate") return "Area found";
+  if (state === "found") return "GPS selected";
+  if (state === "approximate") return "Area selected";
   if (state === "denied") return "GPS blocked";
   return "Use GPS";
 }
