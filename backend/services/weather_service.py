@@ -3,12 +3,14 @@ from __future__ import annotations
 import time
 from datetime import date
 from typing import Any
+from urllib.parse import quote
 
 import requests
 
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+WTTR_URL = "https://wttr.in/{query}"
 WEATHER_CACHE_TTL_SECONDS = 15 * 60
 _WEATHER_CACHE: dict[str, tuple[float, dict[str, Any] | None]] = {}
 
@@ -18,13 +20,58 @@ DESTINATION_ALIASES = {
     "goa": "Panaji",
     "ladakh": "Leh",
     "leh ladakh": "Leh",
+    "meghalaya": "Shillong",
     "korea": "Seoul",
     "south korea": "Seoul",
 }
 
+DESTINATION_COORDINATES: dict[str, dict[str, Any]] = {
+    "ladakh": {
+        "name": "Leh",
+        "admin1": "Ladakh",
+        "country": "India",
+        "country_code": "IN",
+        "latitude": 34.1526,
+        "longitude": 77.5771,
+    },
+    "leh": {
+        "name": "Leh",
+        "admin1": "Ladakh",
+        "country": "India",
+        "country_code": "IN",
+        "latitude": 34.1526,
+        "longitude": 77.5771,
+    },
+    "leh ladakh": {
+        "name": "Leh",
+        "admin1": "Ladakh",
+        "country": "India",
+        "country_code": "IN",
+        "latitude": 34.1526,
+        "longitude": 77.5771,
+    },
+    "meghalaya": {
+        "name": "Shillong",
+        "admin1": "Meghalaya",
+        "country": "India",
+        "country_code": "IN",
+        "latitude": 25.5788,
+        "longitude": 91.8933,
+    },
+    "cherrapunji": {
+        "name": "Cherrapunji",
+        "admin1": "Meghalaya",
+        "country": "India",
+        "country_code": "IN",
+        "latitude": 25.2841,
+        "longitude": 91.7257,
+    },
+}
+
 
 def get_live_weather(destination: str, start_date: str | None = None, end_date: str | None = None) -> dict[str, Any] | None:
-    query = DESTINATION_ALIASES.get(destination.strip().lower(), destination.strip())
+    raw_query = destination.strip()
+    query = DESTINATION_ALIASES.get(raw_query.lower(), raw_query)
     if not query:
         return None
     start_date, end_date = _validated_dates(start_date, end_date)
@@ -33,23 +80,27 @@ def get_live_weather(destination: str, start_date: str | None = None, end_date: 
     now = time.time()
     if cached and now - cached[0] < WEATHER_CACHE_TTL_SECONDS:
         return cached[1]
-    result = _fetch_live_weather(query.lower(), start_date, end_date)
+    result = _fetch_live_weather(query.lower(), start_date, end_date, raw_query.lower())
+    if result is None:
+        result = _fetch_wttr_weather(query.lower(), raw_query.lower())
     _WEATHER_CACHE[cache_key] = (now, result)
     return result
 
 
-def _fetch_live_weather(query: str, start_date: str | None, end_date: str | None) -> dict[str, Any] | None:
+def _fetch_live_weather(query: str, start_date: str | None, end_date: str | None, raw_query: str = "") -> dict[str, Any] | None:
     try:
-        place_response = requests.get(
-            GEOCODING_URL,
-            params={"name": query, "count": 1, "language": "en", "format": "json"},
-            timeout=8,
-        )
-        place_response.raise_for_status()
-        results = place_response.json().get("results") or []
-        if not results:
-            return None
-        place = results[0]
+        place = DESTINATION_COORDINATES.get(raw_query) or DESTINATION_COORDINATES.get(query)
+        if not place:
+            place_response = requests.get(
+                GEOCODING_URL,
+                params={"name": query, "count": 8, "language": "en", "format": "json"},
+                timeout=8,
+            )
+            place_response.raise_for_status()
+            results = place_response.json().get("results") or []
+            if not results:
+                return None
+            place = _best_place_match(results, query)
 
         weather_params = {
                 "latitude": place["latitude"],
@@ -103,7 +154,7 @@ def _fetch_live_weather(query: str, start_date: str | None, end_date: str | None
         selected_forecast = bool(start_date and end_date and forecast)
         summary_high = round(max(forecast_highs), 1) if forecast_highs else _first_number(daily.get("temperature_2m_max"))
         summary_low = round(min(forecast_lows), 1) if forecast_lows else _first_number(daily.get("temperature_2m_min"))
-        summary_temp = round((summary_high + summary_low) / 2, 1) if selected_forecast else _rounded(current.get("temperature_2m"))
+        current_temp = _rounded(current.get("temperature_2m"))
         summary_rain = int(max(forecast_rains)) if forecast_rains else _first_int(daily.get("precipitation_probability_max"))
         summary_code = int(_first_number(daily.get("weather_code"))) if selected_forecast else weather_code
 
@@ -115,7 +166,7 @@ def _fetch_live_weather(query: str, start_date: str | None, end_date: str | None
             "latitude": place.get("latitude"),
             "longitude": place.get("longitude"),
             "timezone": payload.get("timezone"),
-            "temperatureC": summary_temp,
+            "temperatureC": current_temp,
             "feelsLikeC": _rounded(current.get("apparent_temperature")),
             "humidity": _humidity_label(humidity_percent),
             "humidityPercent": humidity_percent,
@@ -135,9 +186,129 @@ def _fetch_live_weather(query: str, start_date: str | None, end_date: str | None
             "forecastEndDate": end_date,
             "source": "Open-Meteo",
             "isLive": True,
+            "temperatureBasis": "Current live temperature at resolved destination coordinates",
         }
     except (requests.RequestException, ValueError, TypeError, KeyError):
         return None
+
+
+def _fetch_wttr_weather(query: str, raw_query: str = "") -> dict[str, Any] | None:
+    try:
+        place = DESTINATION_COORDINATES.get(raw_query) or DESTINATION_COORDINATES.get(query)
+        wttr_query = f"{place['latitude']},{place['longitude']}" if place else query
+        response = requests.get(
+            WTTR_URL.format(query=quote(str(wttr_query), safe=",")),
+            params={"format": "j1"},
+            timeout=10,
+            headers={"User-Agent": "ai-travel-stylist-weather/1.0"},
+        )
+        response.raise_for_status()
+        payload = response.json()
+        current = (payload.get("current_condition") or [{}])[0]
+        nearest = (payload.get("nearest_area") or [{}])[0]
+        weather = (payload.get("weather") or [{}])[0]
+        hourly = (weather.get("hourly") or [{}])[0]
+        resolved_name = place.get("name") if place else _wttr_value(nearest.get("areaName")) or query.title()
+        country = place.get("country") if place else _wttr_value(nearest.get("country"))
+        admin = place.get("admin1") if place else _wttr_value(nearest.get("region"))
+        condition = _wttr_value(current.get("weatherDesc")) or "Live weather"
+
+        return {
+            "locationName": resolved_name,
+            "adminArea": admin,
+            "country": country,
+            "countryCode": place.get("country_code") if place else None,
+            "latitude": place.get("latitude") if place else _optional_rounded(_wttr_value(nearest.get("latitude"))),
+            "longitude": place.get("longitude") if place else _optional_rounded(_wttr_value(nearest.get("longitude"))),
+            "timezone": None,
+            "temperatureC": _rounded(current.get("temp_C")),
+            "feelsLikeC": _rounded(current.get("FeelsLikeC")),
+            "humidity": _humidity_label(int(float(current.get("humidity") or 0))),
+            "humidityPercent": int(float(current.get("humidity") or 0)),
+            "rainProbability": int(float(hourly.get("chanceofrain") or 0)),
+            "precipitationMm": _rounded(current.get("precipMM")),
+            "windKph": _rounded(current.get("windspeedKmph")),
+            "cloudCoverPercent": int(float(current.get("cloudcover") or 0)),
+            "condition": condition,
+            "weatherCode": None,
+            "highC": _rounded(weather.get("maxtempC")),
+            "lowC": _rounded(weather.get("mintempC")),
+            "uvIndex": _optional_rounded(current.get("uvIndex")),
+            "sunrise": _wttr_value((weather.get("astronomy") or [{}])[0].get("sunrise")),
+            "sunset": _wttr_value((weather.get("astronomy") or [{}])[0].get("sunset")),
+            "forecast": _wttr_forecast(payload.get("weather") or []),
+            "forecastStartDate": None,
+            "forecastEndDate": None,
+            "source": "wttr.in",
+            "isLive": True,
+            "temperatureBasis": "Current live temperature at resolved destination coordinates",
+        }
+    except (requests.RequestException, ValueError, TypeError, KeyError, IndexError):
+        return None
+
+
+def _wttr_value(value: Any) -> str | None:
+    if isinstance(value, list) and value:
+        first = value[0]
+        if isinstance(first, dict):
+            return str(first.get("value") or "") or None
+        return str(first)
+    if value is None:
+        return None
+    return str(value)
+
+
+def _wttr_forecast(days: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    forecast = []
+    for day in days:
+        hourly = (day.get("hourly") or [{}])[0]
+        condition = _wttr_value(hourly.get("weatherDesc")) or "Live weather"
+        forecast.append(
+            {
+                "date": day.get("date"),
+                "highC": _optional_rounded(day.get("maxtempC")),
+                "lowC": _optional_rounded(day.get("mintempC")),
+                "rainProbability": _optional_int(hourly.get("chanceofrain")),
+                "uvIndex": _optional_rounded(day.get("uvIndex")),
+                "condition": condition,
+            }
+        )
+    return forecast
+
+
+def _best_place_match(results: list[dict[str, Any]], query: str) -> dict[str, Any]:
+    normalized_query = query.lower().strip()
+    india_bias = {
+        "ladakh",
+        "leh",
+        "meghalaya",
+        "shimla",
+        "jaipur",
+        "lucknow",
+        "goa",
+        "kashmir",
+    }
+
+    def score(place: dict[str, Any]) -> int:
+        name = str(place.get("name") or "").lower()
+        admin = str(place.get("admin1") or "").lower()
+        country_code = str(place.get("country_code") or "").upper()
+        country = str(place.get("country") or "").lower()
+        value = 0
+        if name == normalized_query:
+            value += 80
+        if normalized_query in name:
+            value += 35
+        if normalized_query in admin:
+            value += 30
+        if country_code == "IN" and normalized_query in india_bias:
+            value += 25
+        if country == "india" and normalized_query in india_bias:
+            value += 20
+        value += min(int(place.get("population") or 0) // 100000, 20)
+        return value
+
+    return max(results, key=score)
 
 
 def _rounded(value: Any) -> float:

@@ -1376,10 +1376,32 @@ function accessoryReferenceFor(category: string, title: string) {
   const text = `${category} ${title}`.toLowerCase();
   const color = referenceColorForText(text);
   const kind = referenceKindForText(text);
+  const query = imageQueryForReference(kind, color.label, title);
   return {
-    imageUrl: referenceSvgDataUrl(kind, color.hex, color.label),
-    alt: `${color.label} ${kind} style reference`,
+    imageUrl: `https://source.unsplash.com/720x720/?${encodeURIComponent(query)}`,
+    alt: `${color.label} ${kind} fashion reference`,
   };
+}
+
+function imageQueryForReference(kind: string, color: string, title: string) {
+  const categoryQueries: Record<string, string> = {
+    sunglasses: "fashion sunglasses product editorial",
+    watch: "stylish wrist watch fashion product",
+    blazer: "modern blazer outfit fashion editorial",
+    jacket: "fashion jacket outfit editorial",
+    shorts: "tailored shorts fashion outfit",
+    skirt: "fashion skirt outfit editorial",
+    sneakers: "clean sneakers fashion product",
+    sandals: "fashion sandals product",
+    bag: "handbag fashion product editorial",
+    belt: "leather belt fashion product",
+    jewelry: "minimal jewelry fashion product",
+    scarf: "silk scarf fashion outfit accessory",
+    bottom: "tailored trousers fashion outfit",
+    dress: "fashion dress outfit editorial",
+    top: "fashion top outfit editorial",
+  };
+  return `${color} ${title} ${categoryQueries[kind] ?? "fashion accessory product"}`;
 }
 
 function referenceColorForText(text: string) {
@@ -1405,6 +1427,7 @@ function referenceKindForText(text: string) {
   if (text.includes("blazer")) return "blazer";
   if (text.includes("shorts")) return "shorts";
   if (text.includes("skirt")) return "skirt";
+  if (text.includes("scarf")) return "scarf";
   if (text.includes("sneaker") || text.includes("shoe")) return "sneakers";
   if (text.includes("sandal") || text.includes("flat")) return "sandals";
   if (text.includes("bag")) return "bag";
@@ -1669,34 +1692,38 @@ function completeOutfitFormula(base: WardrobeItem, destination: string): StyleSu
   const neutral = palette[0] ?? { name: "Cream", hex: "#eee4cd" };
   const dark = palette[2] ?? { name: "Black", hex: "#141418" };
   const anchorSlot = wardrobeSlot(base.category);
+  const anchorName = `${base.color.toLowerCase()} ${base.category.toLowerCase()}`;
+  const metal = warmAnchorColors.has(base.color) ? "Gold" : "Silver";
 
   return [
     {
       title: anchorSlot === "bottom" ? `${neutral.name} fitted top` : `${bottom.name} straight bottom`,
-      subtitle: anchorSlot === "bottom" ? "Balances the lower piece" : "Main pairing piece",
-      reason: `This creates the strongest color balance with your ${base.color.toLowerCase()} ${base.category.toLowerCase()}.`,
+      subtitle: anchorSlot === "bottom" ? "Balances your uploaded bottom" : "Keeps your uploaded top as the hero",
+      reason: `This piece is chosen specifically to complement your uploaded ${anchorName}, not replace it.`,
       swatch: anchorSlot === "bottom" ? neutral.hex : bottom.hex,
     },
     {
-      title: "White sneakers or tan flats",
+      title: `${neutral.name} sneakers or tan flats`,
       subtitle: "Comfortable footwear",
-      reason: `Keeps the outfit wearable for walking and photos in ${destination}.`,
-      swatch: "#f5f3ee",
+      reason: `A quieter shoe lets the ${anchorName} stay central while staying practical for ${destination}.`,
+      swatch: neutral.hex,
     },
     {
       title: `${dark.name} or tan bag`,
       subtitle: "Practical accessory",
-      reason: "A grounding bag color makes the full outfit feel intentional.",
+      reason: `A grounding bag color connects the outfit back to your ${anchorName}.`,
       swatch: dark.hex,
     },
     {
-      title: ["Yellow", "Marigold", "Terracotta", "Cream", "Olive", "Brown"].includes(base.color) ? "Gold minimal jewelry" : "Silver minimal jewelry",
+      title: `${metal} minimal jewelry`,
       subtitle: "Finishing detail",
-      reason: "Minimal jewelry adds polish without pulling attention away from the anchor item.",
-      swatch: ["Yellow", "Marigold", "Terracotta", "Cream", "Olive", "Brown"].includes(base.color) ? "#d4af37" : "#c8ccd2",
+      reason: `${metal} details polish the look without overpowering your uploaded ${anchorName}.`,
+      swatch: metal === "Gold" ? "#d4af37" : "#c8ccd2",
     },
   ].map((suggestion) => withVisualReference(suggestion, suggestion.title));
 }
+
+const warmAnchorColors = new Set(["Yellow", "Marigold", "Terracotta", "Cream", "Olive", "Brown", "Red", "Coral", "Beige"]);
 
 function paletteForAnchor(color: string) {
   const palettes: Record<string, { name: string; hex: string }[]> = {
@@ -1710,10 +1737,20 @@ function paletteForAnchor(color: string) {
       { name: "Denim Blue", hex: "#3a608c" },
       { name: "Olive", hex: "#6a7e4c" },
     ],
+    Red: [
+      { name: "Ivory", hex: "#f4efe3" },
+      { name: "Charcoal", hex: "#3e4040" },
+      { name: "Camel", hex: "#b98555" },
+    ],
+    Coral: [
+      { name: "Cream", hex: "#eee4cd" },
+      { name: "Denim Blue", hex: "#3a608c" },
+      { name: "Olive", hex: "#6a7e4c" },
+    ],
     Black: [
       { name: "White", hex: "#f0f0eb" },
-      { name: "Denim Blue", hex: "#3a608c" },
-      { name: "Grey", hex: "#8b8e90" },
+      { name: "Camel", hex: "#b98555" },
+      { name: "Silver Grey", hex: "#8b8e90" },
     ],
     White: [
       { name: "Beige", hex: "#d1be9a" },
