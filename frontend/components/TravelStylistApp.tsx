@@ -1375,17 +1375,21 @@ function accessoryReferenceFor(category: string, title: string, gender: "women" 
   const color = referenceColorForText(text);
   const kind = referenceKindForText(text);
   return {
-    imageUrl: referenceImageFor(kind, color.label, title, gender),
+    imageUrl: referenceImageFor(kind, color.label, title, gender, color.hex),
     alt: `${color.label} ${gender} ${kind} fashion reference`,
   };
 }
 
-function referenceImageFor(kind: string, color: string, title: string, gender: "women" | "men" = "women") {
+function referenceImageFor(kind: string, color: string, title: string, gender: "women" | "men" = "women", colorHex = "#d8cfc0") {
   const text = `${color} ${title}`.toLowerCase();
   const denim = text.includes("denim") || text.includes("blue");
   const cream = text.includes("cream") || text.includes("white") || text.includes("ivory");
   const black = text.includes("black") || text.includes("charcoal");
   const warm = text.includes("tan") || text.includes("brown") || text.includes("terracotta");
+
+  if (["blazer", "jacket", "scarf"].includes(kind)) {
+    return referenceSvgDataUrl(kind, colorHex, `${color} ${kind}`);
+  }
 
   const womenImages: Record<string, string[]> = {
     sunglasses: [
@@ -1545,6 +1549,9 @@ function referenceShapeSvg(kind: string, color: string) {
   }
   if (kind === "jacket") {
     return `<g filter="url(#shadow)"><path d="M142 104l42-22h52l42 22 38 56-37 24v114H141V184l-37-24 38-56z" fill="${color}"/><path d="M184 82l26 58 26-58M210 140v158M159 126l-24 46M261 126l24 46" fill="none" stroke="rgba(255,255,255,.58)" stroke-width="8" stroke-linecap="round"/></g>`;
+  }
+  if (kind === "scarf") {
+    return `<g filter="url(#shadow)"><path d="M112 104c42-26 98-22 132 8 29 25 38 65 18 96-15 23-42 32-69 21-18-8-30-25-25-45 4-17 19-27 36-25 18 3 29 18 25 35-3 13-14 19-27 16" fill="none" stroke="${color}" stroke-width="34" stroke-linecap="round"/><path d="M238 132c40 33 78 83 92 154 5 23-10 42-33 42h-46c13-64-1-122-40-174" fill="${color}"/><path d="M298 286l-36 42M326 286l-22 42M270 286l-50 42" stroke="rgba(255,255,255,.64)" stroke-width="7" stroke-linecap="round"/></g>`;
   }
   if (kind === "shorts") {
     return `<g filter="url(#shadow)"><path d="M128 126h164l26 168h-80l-28-82-28 82h-80l26-168z" fill="${color}"/><path d="M128 158h164M210 132v80" stroke="rgba(255,255,255,.55)" stroke-width="8" stroke-linecap="round"/></g>`;
@@ -1711,9 +1718,11 @@ function idealPairingSuggestions(
         swatch: first.hex,
       },
       {
-        title: "Denim jacket",
+        title: group.value === "Blazer" ? "Soft blue blazer" : "Denim jacket",
         subtitle: "Casual contrast",
-        reason: "Denim adds texture and works well with kurtis, dresses, and fitted tops.",
+        reason: group.value === "Blazer"
+          ? "A soft blue blazer keeps the look feminine and polished without turning the outfit too formal."
+          : "Denim adds texture and works well with kurtis, dresses, and fitted tops.",
         swatch: "#3a608c",
       },
     ].map((suggestion) => withVisualReference(suggestion, group.value, gender));
