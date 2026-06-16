@@ -71,20 +71,20 @@ export function WelcomePage({ onExplore }: WelcomePageProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="welcome-dock mt-10 grid overflow-hidden rounded-[8px] border border-white/40 bg-[#ffffff]/98 text-[#10292e] shadow-[0_20px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl md:grid-cols-[1fr_1fr_1fr_auto]"
+            className="welcome-dock mt-10 grid overflow-hidden rounded-[8px] border border-white/70 bg-[#fffaf0]/95 text-[#10292e] shadow-[0_20px_70px_rgba(0,0,0,0.24)] backdrop-blur-xl md:grid-cols-[1fr_1fr_1fr_auto]"
           >
             {signals.map(({ label, detail, Icon }) => (
-              <div key={label} className="flex min-h-[86px] items-center gap-3 border-b border-[#173239]/12 px-4 py-4 md:border-b-0 md:border-r">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#d6eeea] text-[#08716e]">
+              <div key={label} className="flex min-h-[86px] items-center gap-3 border-b border-[#173239]/12 bg-[#fffdf8]/92 px-4 py-4 md:border-b-0 md:border-r">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#d6eeea] text-[#08716e] shadow-[0_10px_25px_rgba(8,113,110,0.16)]">
                   <Icon size={18} />
                 </span>
                 <div>
-                  <p className="text-sm font-black text-[#0d252b]">{label}</p>
-                  <p className="mt-1 text-xs font-semibold text-[#30474c]">{detail}</p>
+                  <p className="text-sm font-black text-[#0b2228]">{label}</p>
+                  <p className="mt-1 text-xs font-bold text-[#415a60]">{detail}</p>
                 </div>
               </div>
             ))}
-            <div className="flex items-center p-3">
+            <div className="flex items-center bg-[#f4efe4]/95 p-3">
               <button
                 type="button"
                 onClick={onExplore}

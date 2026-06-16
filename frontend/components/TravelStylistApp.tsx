@@ -14,7 +14,6 @@ import {
   Headphones,
   ImageIcon,
   MapPin,
-  Music2,
   Palette,
   Plus,
   RefreshCcw,
@@ -672,12 +671,6 @@ export function TravelStylistApp({
             <ShopPanel outfits={outfits} />
           </div>
 
-          {dance?.enabled ? (
-            <div className="mt-6">
-              <SectionHeading eyebrow="After dark" title="Dance and nightlife prep" icon={<Music2 size={18} />} />
-              <DancePanel dance={dance} />
-            </div>
-          ) : null}
         </section>
       ) : null}
 
@@ -1376,32 +1369,90 @@ function accessoryReferenceFor(category: string, title: string) {
   const text = `${category} ${title}`.toLowerCase();
   const color = referenceColorForText(text);
   const kind = referenceKindForText(text);
-  const query = imageQueryForReference(kind, color.label, title);
   return {
-    imageUrl: `https://source.unsplash.com/720x720/?${encodeURIComponent(query)}`,
+    imageUrl: referenceImageFor(kind, color.label, title),
     alt: `${color.label} ${kind} fashion reference`,
   };
 }
 
-function imageQueryForReference(kind: string, color: string, title: string) {
-  const categoryQueries: Record<string, string> = {
-    sunglasses: "fashion sunglasses product editorial",
-    watch: "stylish wrist watch fashion product",
-    blazer: "modern blazer outfit fashion editorial",
-    jacket: "fashion jacket outfit editorial",
-    shorts: "tailored shorts fashion outfit",
-    skirt: "fashion skirt outfit editorial",
-    sneakers: "clean sneakers fashion product",
-    sandals: "fashion sandals product",
-    bag: "handbag fashion product editorial",
-    belt: "leather belt fashion product",
-    jewelry: "minimal jewelry fashion product",
-    scarf: "silk scarf fashion outfit accessory",
-    bottom: "tailored trousers fashion outfit",
-    dress: "fashion dress outfit editorial",
-    top: "fashion top outfit editorial",
+function referenceImageFor(kind: string, color: string, title: string) {
+  const text = `${color} ${title}`.toLowerCase();
+  const denim = text.includes("denim") || text.includes("blue");
+  const cream = text.includes("cream") || text.includes("white") || text.includes("ivory");
+  const black = text.includes("black") || text.includes("charcoal");
+  const warm = text.includes("tan") || text.includes("brown") || text.includes("terracotta");
+
+  const images: Record<string, string[]> = {
+    sunglasses: [
+      "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=720&q=84",
+    ],
+    watch: [
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=720&q=84",
+    ],
+    sneakers: [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=720&q=84",
+    ],
+    sandals: [
+      "https://images.unsplash.com/photo-1562273138-f46be4ebdf33?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1603487742131-4160ec999306?auto=format&fit=crop&w=720&q=84",
+    ],
+    bag: [
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?auto=format&fit=crop&w=720&q=84",
+    ],
+    jewelry: [
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=720&q=84",
+    ],
+    scarf: [
+      "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?auto=format&fit=crop&w=720&q=84",
+    ],
+    belt: [
+      "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=720&q=84",
+    ],
+    skirt: [
+      "https://images.unsplash.com/photo-1583496661160-fb5886a13d27?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1583846783214-7229a91b20ed?auto=format&fit=crop&w=720&q=84",
+    ],
+    shorts: [
+      "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=720&q=84",
+    ],
+    bottom: [
+      "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=720&q=84",
+    ],
+    blazer: [
+      "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1520975661595-6453be3f7070?auto=format&fit=crop&w=720&q=84",
+    ],
+    jacket: [
+      "https://images.unsplash.com/photo-1523398002811-999ca8dec234?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=720&q=84",
+    ],
+    dress: [
+      "https://images.unsplash.com/photo-1539008835657-9e8e9680c956?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=720&q=84",
+    ],
+    top: [
+      "https://images.unsplash.com/photo-1562157873-818bc0726f68?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=720&q=84",
+    ],
   };
-  return `${color} ${title} ${categoryQueries[kind] ?? "fashion accessory product"}`;
+
+  const choices = images[kind] ?? images.top;
+  if ((kind === "jacket" || kind === "blazer") && denim) return images.jacket[0];
+  if ((kind === "jacket" || kind === "blazer") && (cream || warm)) return images.blazer[0];
+  if (kind === "bottom" && denim) return images.bottom[1];
+  if (kind === "sneakers" && black) return images.sneakers[1];
+  const index = `${kind}-${color}-${title}`.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % choices.length;
+  return choices[index];
 }
 
 function referenceColorForText(text: string) {
@@ -2584,14 +2635,9 @@ function ShopPanel({ outfits }: { outfits: OutfitResponse | null }) {
                 href={product.url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between rounded-[8px] bg-paper p-3 transition hover:bg-saffron/18"
+                className="flex items-center rounded-[8px] bg-paper p-3 transition hover:bg-saffron/18"
               >
-                <div>
-                  <p className="font-semibold">{product.merchant}</p>
-                  <p className="text-sm text-ink/60">{product.name}</p>
-                  <p className="text-xs text-ink/42">{product.priceRange}</p>
-                </div>
-                <span className="text-sm font-bold text-reef">{product.ratingEstimate}</span>
+                <p className="font-semibold">{product.merchant}</p>
               </a>
             ))}
           </div>
