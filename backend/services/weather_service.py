@@ -14,6 +14,8 @@ WTTR_URL = "https://wttr.in/{query}"
 WEATHER_CACHE_TTL_SECONDS = 15 * 60
 _WEATHER_CACHE: dict[str, tuple[float, dict[str, Any] | None]] = {}
 
+# These are only corrections for broad region names that geocoders often resolve poorly.
+# Every other user input still goes through live geocoding and weather lookup.
 DESTINATION_ALIASES = {
     "kashmir": "Srinagar",
     "rajasthan": "Jaipur",
@@ -75,7 +77,7 @@ def get_live_weather(destination: str, start_date: str | None = None, end_date: 
     if not query:
         return None
     start_date, end_date = _validated_dates(start_date, end_date)
-    cache_key = f"{query.lower()}|{start_date or ''}|{end_date or ''}"
+    cache_key = f"{raw_query.lower()}|{query.lower()}|{start_date or ''}|{end_date or ''}"
     cached = _WEATHER_CACHE.get(cache_key)
     now = time.time()
     if cached and now - cached[0] < WEATHER_CACHE_TTL_SECONDS:

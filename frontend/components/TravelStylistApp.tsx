@@ -1542,7 +1542,7 @@ function idealPairingSuggestions(
 ): StyleSuggestion[] {
   if (group.value === COMPLETE_OUTFIT_VALUE) return completeOutfitFormula(base, destination);
 
-  const palette = paletteForAnchor(base.color);
+  const palette = paletteForAnchor(base.color, base.colorHex);
   const first = palette[0] ?? { name: "Cream", hex: "#eee4cd" };
   const second = palette[1] ?? { name: "Denim Blue", hex: "#3a608c" };
   const third = palette[2] ?? { name: "Black", hex: "#141418" };
@@ -1595,7 +1595,7 @@ function idealPairingSuggestions(
   }
 
   if (["Jewelry", "Watch"].includes(group.value)) {
-    const metal = ["Yellow", "Marigold", "Terracotta", "Cream", "Olive", "Brown"].includes(base.color) ? "gold" : "silver";
+  const metal = isWarmColor(base.color, base.colorHex) ? "gold" : "silver";
     return [
       {
         title: `Minimal ${metal} hoops`,
@@ -1687,13 +1687,13 @@ function idealPairingSuggestions(
 }
 
 function completeOutfitFormula(base: WardrobeItem, destination: string): StyleSuggestion[] {
-  const palette = paletteForAnchor(base.color);
+  const palette = paletteForAnchor(base.color, base.colorHex);
   const bottom = palette[1] ?? { name: "Denim Blue", hex: "#3a608c" };
   const neutral = palette[0] ?? { name: "Cream", hex: "#eee4cd" };
   const dark = palette[2] ?? { name: "Black", hex: "#141418" };
   const anchorSlot = wardrobeSlot(base.category);
   const anchorName = `${base.color.toLowerCase()} ${base.category.toLowerCase()}`;
-  const metal = warmAnchorColors.has(base.color) ? "Gold" : "Silver";
+  const metal = isWarmColor(base.color, base.colorHex) ? "Gold" : "Silver";
 
   return [
     {
@@ -1725,7 +1725,7 @@ function completeOutfitFormula(base: WardrobeItem, destination: string): StyleSu
 
 const warmAnchorColors = new Set(["Yellow", "Marigold", "Terracotta", "Cream", "Olive", "Brown", "Red", "Coral", "Beige"]);
 
-function paletteForAnchor(color: string) {
+function paletteForAnchor(color: string, colorHex?: string) {
   const palettes: Record<string, { name: string; hex: string }[]> = {
     Yellow: [
       { name: "Cream", hex: "#eee4cd" },
@@ -1789,11 +1789,91 @@ function paletteForAnchor(color: string) {
     ],
   };
 
-  return palettes[color] ?? [
-    { name: "Cream", hex: "#eee4cd" },
-    { name: "Denim Blue", hex: "#3a608c" },
-    { name: "Black", hex: "#141418" },
+  return palettes[color] ?? paletteFromHex(colorHex);
+}
+
+function paletteFromHex(colorHex?: string) {
+  const rgb = parseHexColor(colorHex);
+  if (!rgb) {
+    return [
+      { name: "Soft Neutral", hex: "#eee4cd" },
+      { name: "Denim Blue", hex: "#3a608c" },
+      { name: "Deep Charcoal", hex: "#2f3336" },
+    ];
+  }
+
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const warm = hsl.h < 55 || hsl.h >= 330;
+  const lightNeutral = warm ? { name: "Warm Ivory", hex: "#f4efe3" } : { name: "Soft Stone", hex: "#e7e3d8" };
+  const complement = hslToHex((hsl.h + 180) % 360, Math.max(24, hsl.s * 0.58), Math.min(46, Math.max(30, hsl.l * 0.58)));
+  const deepAccent = hslToHex(hsl.h, Math.max(24, hsl.s * 0.72), Math.max(18, Math.min(30, hsl.l * 0.42)));
+  const complementName = warm ? "Cool Complement" : "Warm Complement";
+  return [
+    lightNeutral,
+    { name: complementName, hex: complement },
+    { name: "Deep Tonal Accent", hex: deepAccent },
   ];
+}
+
+function parseHexColor(colorHex?: string) {
+  if (!colorHex || !/^#[0-9a-f]{6}$/i.test(colorHex)) return null;
+  return {
+    r: parseInt(colorHex.slice(1, 3), 16),
+    g: parseInt(colorHex.slice(3, 5), 16),
+    b: parseInt(colorHex.slice(5, 7), 16),
+  };
+}
+
+function rgbToHsl(r: number, g: number, b: number) {
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const delta = max - min;
+    s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
+    if (max === red) h = (green - blue) / delta + (green < blue ? 6 : 0);
+    if (max === green) h = (blue - red) / delta + 2;
+    if (max === blue) h = (red - green) / delta + 4;
+    h *= 60;
+  }
+
+  return { h, s: s * 100, l: l * 100 };
+}
+
+function hslToHex(h: number, s: number, l: number) {
+  const saturation = s / 100;
+  const lightness = l / 100;
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = lightness - chroma / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (h < 60) [r, g, b] = [chroma, x, 0];
+  else if (h < 120) [r, g, b] = [x, chroma, 0];
+  else if (h < 180) [r, g, b] = [0, chroma, x];
+  else if (h < 240) [r, g, b] = [0, x, chroma];
+  else if (h < 300) [r, g, b] = [x, 0, chroma];
+  else [r, g, b] = [chroma, 0, x];
+
+  return `#${[r, g, b]
+    .map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function isWarmColor(color: string, colorHex?: string) {
+  if (warmAnchorColors.has(color)) return true;
+  const rgb = parseHexColor(colorHex);
+  if (!rgb) return false;
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  return hsl.h < 70 || hsl.h >= 330;
 }
 
 function matchCategoriesFor(category: string) {
