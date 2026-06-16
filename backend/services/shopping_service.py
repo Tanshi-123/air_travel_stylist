@@ -13,15 +13,16 @@ MERCHANTS = [
 ]
 
 
-def recommend_products(missing_items: list[str]) -> list[dict[str, object]]:
+def recommend_products(missing_items: list[str], gender: str = "women") -> list[dict[str, object]]:
     """Return shopping search suggestions for wardrobe gaps.
 
     These are neutral search links for the MVP. Production should replace this
     with official affiliate/product APIs so prices and ratings are verified.
     """
     recommendations = []
+    selected_gender = _normal_gender(gender)
     for index, item in enumerate(missing_items):
-        query = quote_plus(_shopping_query(item))
+        query = quote_plus(_shopping_query(item, selected_gender))
         recommendations.append(
             {
                 "item": item,
@@ -46,19 +47,34 @@ def _price_range(index: int) -> str:
     return ranges[index % len(ranges)]
 
 
-def _shopping_query(item: str) -> str:
+def _shopping_query(item: str, gender: str) -> str:
+    audience = "women" if gender == "women" else "men"
     category_terms = {
-        "trench coat": "trench coat women men",
-        "insulated jacket": "winter insulated jacket",
-        "water-resistant jacket": "water resistant travel jacket",
-        "weatherproof boots": "weatherproof travel boots",
-        "weatherproof shoes": "weatherproof walking shoes",
-        "straight trousers": "straight fit trousers",
-        "cotton trousers": "cotton linen trousers",
-        "tailored evening layer": "tailored blazer evening",
-        "statement accessory": "minimal statement accessory",
+        "trench coat": f"{audience} trench coat",
+        "insulated jacket": f"{audience} winter insulated jacket",
+        "water-resistant jacket": f"{audience} water resistant travel jacket",
+        "weatherproof boots": f"{audience} weatherproof travel boots",
+        "weatherproof shoes": f"{audience} weatherproof walking shoes",
+        "straight trousers": f"{audience} straight fit trousers",
+        "cotton trousers": f"{audience} cotton linen trousers",
+        "tailored evening layer": f"{audience} tailored blazer evening",
+        "statement accessory": f"{audience} minimal statement accessory",
+        "cotton kurti": "women cotton kurti",
+        "breathable dress": "women breathable summer dress",
+        "comfortable flats": "women comfortable flats",
+        "light scarf": "women light scarf",
     }
-    return category_terms.get(item.lower(), item)
+    query = category_terms.get(item.lower(), item)
+    if audience not in query.lower() and "unisex" not in query.lower():
+        query = f"{audience} {query}"
+    return query
+
+
+def _normal_gender(gender: str) -> str:
+    value = str(gender or "").strip().lower()
+    if value in {"men", "man", "male", "boys", "boy"}:
+        return "men"
+    return "women"
 
 
 def _styling_note(item: str) -> str:

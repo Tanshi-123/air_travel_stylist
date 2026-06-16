@@ -641,6 +641,7 @@ export function TravelStylistApp({
                 wardrobeItems={wardrobeItems}
                 outfits={outfits}
                 pairingGoal={pairingGoal}
+                gender={gender}
                 showAnalysis={showOutfitAnalysis}
                 onSelectItem={setLatestUploaded}
               />
@@ -1356,8 +1357,12 @@ function StyleSuggestionCard({ suggestion }: { suggestion: StyleSuggestion }) {
   );
 }
 
-function withVisualReference(suggestion: Omit<StyleSuggestion, "imageUrl" | "imageAlt">, category: string): StyleSuggestion {
-  const reference = accessoryReferenceFor(category, suggestion.title);
+function withVisualReference(
+  suggestion: Omit<StyleSuggestion, "imageUrl" | "imageAlt">,
+  category: string,
+  gender: "women" | "men" = "women"
+): StyleSuggestion {
+  const reference = accessoryReferenceFor(category, suggestion.title, gender);
   return {
     ...suggestion,
     imageUrl: reference.imageUrl,
@@ -1365,24 +1370,24 @@ function withVisualReference(suggestion: Omit<StyleSuggestion, "imageUrl" | "ima
   };
 }
 
-function accessoryReferenceFor(category: string, title: string) {
+function accessoryReferenceFor(category: string, title: string, gender: "women" | "men" = "women") {
   const text = `${category} ${title}`.toLowerCase();
   const color = referenceColorForText(text);
   const kind = referenceKindForText(text);
   return {
-    imageUrl: referenceImageFor(kind, color.label, title),
-    alt: `${color.label} ${kind} fashion reference`,
+    imageUrl: referenceImageFor(kind, color.label, title, gender),
+    alt: `${color.label} ${gender} ${kind} fashion reference`,
   };
 }
 
-function referenceImageFor(kind: string, color: string, title: string) {
+function referenceImageFor(kind: string, color: string, title: string, gender: "women" | "men" = "women") {
   const text = `${color} ${title}`.toLowerCase();
   const denim = text.includes("denim") || text.includes("blue");
   const cream = text.includes("cream") || text.includes("white") || text.includes("ivory");
   const black = text.includes("black") || text.includes("charcoal");
   const warm = text.includes("tan") || text.includes("brown") || text.includes("terracotta");
 
-  const images: Record<string, string[]> = {
+  const womenImages: Record<string, string[]> = {
     sunglasses: [
       "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=720&q=84",
       "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=720&q=84",
@@ -1446,6 +1451,27 @@ function referenceImageFor(kind: string, color: string, title: string) {
     ],
   };
 
+  const menImages: Record<string, string[]> = {
+    ...womenImages,
+    blazer: [
+      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1516826957135-700dedea698c?auto=format&fit=crop&w=720&q=84",
+    ],
+    jacket: [
+      "https://images.unsplash.com/photo-1520975954732-35dd22299614?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1548883354-94bcfe321cbb?auto=format&fit=crop&w=720&q=84",
+    ],
+    bottom: [
+      "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=720&q=84",
+    ],
+    top: [
+      "https://images.unsplash.com/photo-1516257984-b1b4d707412e?auto=format&fit=crop&w=720&q=84",
+      "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&w=720&q=84",
+    ],
+  };
+
+  const images = gender === "men" ? menImages : womenImages;
   const choices = images[kind] ?? images.top;
   if ((kind === "jacket" || kind === "blazer") && denim) return images.jacket[0];
   if ((kind === "jacket" || kind === "blazer") && (cream || warm)) return images.blazer[0];
@@ -1589,9 +1615,10 @@ function exampleOptionsForGroup(label: string) {
 function idealPairingSuggestions(
   base: WardrobeItem,
   group: PairingGroup,
-  destination: string
+  destination: string,
+  gender: "women" | "men" = "women"
 ): StyleSuggestion[] {
-  if (group.value === COMPLETE_OUTFIT_VALUE) return completeOutfitFormula(base, destination);
+  if (group.value === COMPLETE_OUTFIT_VALUE) return completeOutfitFormula(base, destination, gender);
 
   const palette = paletteForAnchor(base.color, base.colorHex);
   const first = palette[0] ?? { name: "Cream", hex: "#eee4cd" };
@@ -1619,7 +1646,7 @@ function idealPairingSuggestions(
         reason: `A darker bottom adds contrast and makes the anchor item look more intentional.`,
         swatch: third.hex,
       },
-    ].map((suggestion) => withVisualReference(suggestion, group.value));
+    ].map((suggestion) => withVisualReference(suggestion, group.value, gender));
   }
 
   if (targetSlot === "footwear") {
@@ -1642,7 +1669,7 @@ function idealPairingSuggestions(
         reason: "Tan reads warm and relaxed without fighting the anchor color.",
         swatch: "#b98555",
       },
-    ].map((suggestion) => withVisualReference(suggestion, group.value));
+    ].map((suggestion) => withVisualReference(suggestion, group.value, gender));
   }
 
   if (["Jewelry", "Watch"].includes(group.value)) {
@@ -1666,7 +1693,7 @@ function idealPairingSuggestions(
         reason: "A pendant works especially well with kurtis, shirts, and plain tops.",
         swatch: "#f2dfbc",
       },
-    ].map((suggestion) => withVisualReference(suggestion, group.value));
+    ].map((suggestion) => withVisualReference(suggestion, group.value, gender));
   }
 
   if (["Jacket", "Blazer"].includes(group.value)) {
@@ -1689,7 +1716,7 @@ function idealPairingSuggestions(
         reason: "Denim adds texture and works well with kurtis, dresses, and fitted tops.",
         swatch: "#3a608c",
       },
-    ].map((suggestion) => withVisualReference(suggestion, group.value));
+    ].map((suggestion) => withVisualReference(suggestion, group.value, gender));
   }
 
   if (targetSlot === "top" || targetSlot === "onepiece") {
@@ -1712,7 +1739,7 @@ function idealPairingSuggestions(
         reason: "Blue and denim tones are reliable when you want the look to feel relaxed.",
         swatch: second.hex,
       },
-    ].map((suggestion) => withVisualReference(suggestion, group.value));
+    ].map((suggestion) => withVisualReference(suggestion, group.value, gender));
   }
 
   return [
@@ -1734,10 +1761,10 @@ function idealPairingSuggestions(
       reason: `${group.label} should support the outfit palette instead of competing with the anchor item.`,
       swatch: second.hex,
     },
-  ].map((suggestion) => withVisualReference(suggestion, group.value));
+  ].map((suggestion) => withVisualReference(suggestion, group.value, gender));
 }
 
-function completeOutfitFormula(base: WardrobeItem, destination: string): StyleSuggestion[] {
+function completeOutfitFormula(base: WardrobeItem, destination: string, gender: "women" | "men" = "women"): StyleSuggestion[] {
   const palette = paletteForAnchor(base.color, base.colorHex);
   const bottom = palette[1] ?? { name: "Denim Blue", hex: "#3a608c" };
   const neutral = palette[0] ?? { name: "Cream", hex: "#eee4cd" };
@@ -1771,7 +1798,7 @@ function completeOutfitFormula(base: WardrobeItem, destination: string): StyleSu
       reason: `${metal} details polish the look without overpowering your uploaded ${anchorName}.`,
       swatch: metal === "Gold" ? "#d4af37" : "#c8ccd2",
     },
-  ].map((suggestion) => withVisualReference(suggestion, suggestion.title));
+  ].map((suggestion) => withVisualReference(suggestion, suggestion.title, gender));
 }
 
 const warmAnchorColors = new Set(["Yellow", "Marigold", "Terracotta", "Cream", "Olive", "Brown", "Red", "Coral", "Beige"]);
@@ -2287,6 +2314,7 @@ function OutfitsPanel({
   wardrobeItems,
   outfits,
   pairingGoal,
+  gender,
   showAnalysis,
   onSelectItem
 }: {
@@ -2295,6 +2323,7 @@ function OutfitsPanel({
   wardrobeItems: WardrobeItem[];
   outfits: OutfitResponse | null;
   pairingGoal: string;
+  gender: "women" | "men";
   showAnalysis: boolean;
   onSelectItem: (item: WardrobeItem) => void;
 }) {
@@ -2314,8 +2343,8 @@ function OutfitsPanel({
     .filter((match) => match.score > 0)
     .sort((first, second) => second.score - first.score)
     .slice(0, 8);
-  const idealSuggestions = idealPairingSuggestions(featuredItem, group, destination);
-  const completeLook = completeOutfitFormula(featuredItem, destination);
+  const idealSuggestions = idealPairingSuggestions(featuredItem, group, destination, gender);
+  const completeLook = completeOutfitFormula(featuredItem, destination, gender);
 
   return (
     <div className="rounded-[8px] border border-white/70 bg-white p-4 shadow-soft">

@@ -65,7 +65,7 @@ def generate_outfits(
         "ownedItemCount": len(wardrobe),
         "outfits": _build_mix_match_outfits(wardrobe, profile),
         "missingItems": missing,
-        "shoppingRecommendations": recommend_products(missing[:4]),
+        "shoppingRecommendations": recommend_products(missing[:4], selected_gender),
     }
 
 
